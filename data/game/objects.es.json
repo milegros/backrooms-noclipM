@@ -1,0 +1,46 @@
+{
+ "agua_almendras": {
+  "id": "agua_almendras",
+  "nombre": "Agua de almendras",
+  "descripcion": "El recurso más preciado de las Backrooms. Sacia la sed y calma la mente.",
+  "efecto": { "sed": 45, "cordura": 10 },
+  "color": "#e8d8a0",
+  "url": "https://backrooms.fandom.com/wiki/Object_1"
+ },
+ "botiquin": {
+  "id": "botiquin",
+  "nombre": "Botiquín",
+  "descripcion": "Vendas, antiséptico y suerte. Restaura la salud.",
+  "efecto": { "salud": 40 },
+  "color": "#d05050"
+ },
+ "linterna": {
+  "id": "linterna",
+  "nombre": "Linterna",
+  "descripcion": "Amplía tu radio de visión mientras está encendida. Su luz atrae a las Deathmoths.",
+  "efecto": { "toggle": "luz" },
+  "color": "#ffe060"
+ },
+ "chaqueta": {
+  "id": "chaqueta",
+  "nombre": "Chaqueta térmica",
+  "descripcion": "Anula el daño por frío de los niveles helados mientras la lleves.",
+  "efecto": { "pasivo": "abrigo" },
+  "color": "#6090c0"
+ },
+ "amuleto": {
+  "id": "amuleto",
+  "nombre": "Recuerdo del hogar",
+  "descripcion": "Una foto, unas llaves, un tique de compra. Un ancla a la realidad que restaura la cordura.",
+  "efecto": { "cordura": 35 },
+  "color": "#c0a0e0"
+ },
+ "llave_nivel": {
+  "id": "llave_nivel",
+  "nombre": "Llave de Nivel (Object 2)",
+  "descripcion": "Abre las puertas de acero de The Hub. Un solo uso: elige bien tu destino.",
+  "efecto": { "pasivo": "llave" },
+  "color": "#e0b040",
+  "url": "https://backrooms.fandom.com/wiki/Object_2"
+ }
+}
