@@ -220,6 +220,11 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 /* v20: el checkbox del dado se veía como un slider vacío — ahora es un checkbox */
 .chk-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--amarillo);
   cursor: pointer; vertical-align: middle; margin-right: 6px; }
+/* v20.2: fila de debug (teleport a niveles) */
+#debug-nivel { flex: 1; background: #0a0906; border: 1px solid var(--borde);
+  color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
+  cursor: pointer; min-width: 0; }
+#debug-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
 .sound-row span { width: 36px; text-align: right; color: var(--gris); font-size: 12px; }
 .chk-row { flex: 1; color: var(--gris); font-size: 13px; cursor: pointer; }
 .chk-row input { accent-color: var(--amarillo); cursor: pointer; vertical-align: middle; }

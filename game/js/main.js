@@ -77,6 +77,11 @@
       document.getElementById(id + '-v').textContent = s.value + '%';
     }
     pintarBtnMute();
+    // fila de debug: solo en partida; preselecciona el nivel actual
+    const dbgRow = document.getElementById('debug-row');
+    const enJuego = world.level && !world.over;
+    dbgRow.style.display = enJuego ? 'flex' : 'none';
+    if (enJuego) document.getElementById('debug-nivel').value = world.level.id;
     sndMenu.style.display = 'flex';
     if (world.level && !world.over) world.busy = true;
   }
@@ -108,6 +113,29 @@
     pintarBtnMute();
   };
   document.getElementById('btn-snd-close').onclick = cerrarSndMenu;
+
+  // ---------- debug (v20.2): teleport a cualquier nivel desde Ajustes ----------
+  {
+    const sel = document.getElementById('debug-nivel');
+    const niveles = Object.values(world.data.levels).slice().sort((a, b) => {
+      // orden natural por número de nivel; los sin número, al final
+      const na = parseInt((a.wikiTitle.match(/\d+/) || [9999])[0], 10);
+      const nb = parseInt((b.wikiTitle.match(/\d+/) || [9999])[0], 10);
+      return na - nb || a.wikiTitle.localeCompare(b.wikiTitle);
+    });
+    for (const lv of niveles) {
+      const o = document.createElement('option');
+      o.value = lv.id;
+      o.textContent = `${lv.wikiTitle} · P${lv.peligro} · ${lv.bioma}${lv.esEscape ? ' ⭐' : ''}`;
+      sel.appendChild(o);
+    }
+    document.getElementById('btn-debug-tp').onclick = () => {
+      const id = sel.value;
+      if (!world.level || world.over || !world.data.levels[id]) return;
+      cerrarSndMenu();
+      Game.debugTeleport(id);
+    };
+  }
   // mochila (v15): botón del HUD y cierre del panel
   const btnMochila = document.getElementById('btn-mochila');
   if (btnMochila) {

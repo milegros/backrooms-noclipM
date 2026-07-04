@@ -1253,6 +1253,14 @@
     });
   }
 
+  // teleport de depuración (v20.2): salto directo a cualquier nivel desde el
+  // menú de Ajustes — sin puerta de retorno, para no ensuciar el mundo
+  function debugTeleport(id) {
+    if (!world.data.levels[id] || world.over || !world.level) return;
+    world.log(`DEBUG: teleport a ${world.data.levels[id].wikiTitle}.`, 'event');
+    enterLevel(id, 'Teleport de depuración.', { sinRetorno: true });
+  }
+
   // pared agrietada (v20): la salida hay que ABRIRLA rompiendo el muro — a
   // puñetazos cuesta (y duele); con una herramienta EN MANO es mucho más fácil
   function intentarRomper(ex) {
@@ -1500,6 +1508,6 @@
     world, startRun, continueRun, loadSave, Profiles, INSTINTOS,
     tryMove, wait, interact, toggleLuz, useItem, crossExit,
     girar, avanzar, equipar, desequipar, usarMano, tirarItem, arrojarItem, noclip,
-    ponerEquipo, quitarEquipo,
+    ponerEquipo, quitarEquipo, debugTeleport,
   };
 })();

@@ -29,7 +29,7 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 | J | Diario de ruta de la partida |
 | C | Códice del Errante (expediente y colección) |
 | 1-6 | Usar objeto de la mochila |
-| ESC | **Ajustes**: volumen, controles y opciones (aquí vive ahora el volumen) |
+| ESC | **Ajustes**: volumen, controles, opciones y el menú 🐞 Debug |
 | Q (o clic en su caja) | **Usar la mano izquierda** (linterna, tubería, fuego griego…) |
 | E (o clic en su caja) | **Usar la mano derecha** (los objetos a 2 manos solo responden a Q) |
 | G | **No-clip** (solo con su Instinto): atraviesas la pared que encaras |
@@ -224,6 +224,13 @@ niveles parseado en `data/parsed/levels.json`. Claude crea la ficha en español 
 Si quieres hacerlo tú: copia una ficha similar en `levels.es.json`, cámbiale `id`, textos,
 `bioma` (uno de: pasillos, garaje, tuneles, hospital, oficinas, exterior, bosque, ciudad, torres),
 paleta y salidas (los `destino` deben ser ids que existan), y ejecuta `build-data.js`.
+
+## 7b. Menú de debug (probar niveles rápido)
+
+En partida, abre **Ajustes** (`ESC`): abajo está la fila **🐞 Debug** con un desplegable de
+los 30 niveles (número, peligro y bioma) y el botón **Teleport**. Te lleva directo al nivel
+elegido, sin crear puerta de retorno (para no ensuciar el mundo persistente). Ideal para
+revisar un nivel concreto en el stream sin jugar hasta él.
 
 ## 8. El mapa de niveles (para ti, no para el juego)
 

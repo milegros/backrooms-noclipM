@@ -182,7 +182,9 @@ Cazador `paralizada=2`. Golpe de tubería: retroceso solo 25% (si no, el telegra
 nunca conectaba). X = bocadillo de espera. Códice: icono-interrogante → wiki real en cartas
 descubiertas. FIX: el checkbox del dado era invisible (los estilos de slider de .sound-row
 pisaban todo input → ahora `input[type=range]`). El selftest responde choice-modal
-(60% primera opción) — sin él se atascaba en la caminata del L0.
+(60% primera opción) — sin él se atascaba en la caminata del L0. **v20.2**: fila 🐞 Debug
+en Ajustes (solo en partida): desplegable con los 30 niveles ordenados por número +
+`Game.debugTeleport(id)` (enterLevel con `sinRetorno:true` — sin puerta de vuelta).
 
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate
