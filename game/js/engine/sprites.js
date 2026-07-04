@@ -1,8 +1,8 @@
-// Sprites pixel-art procedurales (rejilla 16×16 → ×3 = 48px) con contorno
-// automático y 2 frames de animación. Soporta override con PNG externos en
-// game/assets/sprites/<id>.png (hoja horizontal de frames de 48×48).
+// Sprites pixel-art procedurales (rejilla 16×16 ó 24×24 → salida siempre 48px)
+// con contorno automático y N frames de animación. Soporta override con PNG
+// externos en game/assets/sprites/<id>.png (hoja horizontal de frames de 48×48).
 (function () {
-  const S = 16, P = 3, OUT = 'rgba(12,10,8,0.9)';
+  const OUT = 'rgba(12,10,8,0.9)';
 
   // ---------- rasterizador de matrices ----------
   function shadeHex(hex, f) {
@@ -14,6 +14,9 @@
   }
 
   function rasterize(pal, rows) {
+    // la rejilla se deriva de la matriz (16→×3, 24→×2); la salida es siempre 48px
+    const S = rows.length;
+    const P = Math.max(1, Math.round(48 / S));
     const c = document.createElement('canvas');
     c.width = S * P; c.height = S * P;
     const ctx = c.getContext('2d');
@@ -62,111 +65,137 @@
     s: '#e8c9a0', p: '#3e3a36', P: '#312e2b', b: '#2a2622', B: '#4d4438',
     k: '#8a5a30', K: '#6e4826', Q: '#87603a',
   };
-  DEFS.player_down = { pal: palPlayer, frames: [[
-    '................',
-    '.....hhhhhh.....',
-    '....hhhhhhhh....',
-    '....Hhhhhhhh....',
-    '....hfeffefh....',
-    '.....fffFff.....',
-    '....cjjzzjjc....',
-    '...jjkjzzjkjj...',
-    '...sjkjzzjkjs...',
-    '...sjJjzzjJjs...',
-    '....jjjzzjjj....',
-    '....pppppppp....',
-    '....pPp..pPp....',
-    '....pp....pp....',
-    '....bB....bB....',
-    '................',
-  ], [
-    '................',
-    '.....hhhhhh.....',
-    '....hhhhhhhh....',
-    '....Hhhhhhhh....',
-    '....hfeffefh....',
-    '.....fffFff.....',
-    '....cjjzzjjc....',
-    '...jjkjzzjkjj...',
-    '...sjkjzzjkjs...',
-    '...sjJjzzjJjs...',
-    '....jjjzzjjj....',
-    '....pppppppp....',
-    '....pPp..pP.....',
-    '.....pp...pp....',
-    '.....bB...bB....',
-    '................',
-  ]] };
-  DEFS.player_up = { pal: palPlayer, frames: [[
-    '................',
-    '.....hhhhhh.....',
-    '....hhhhhhhh....',
-    '....hHHHHHHh....',
-    '....hHHHHHHh....',
-    '.....hhhhhh.....',
-    '....cjjjjjjc....',
-    '...jKKKKKKKKj...',
-    '...sKQQKKQQKs...',
-    '...sKQQKKQQKs...',
-    '....KKKkkKKK....',
-    '....pppppppp....',
-    '....pPp..pPp....',
-    '....pp....pp....',
-    '....bB....bB....',
-    '................',
-  ], [
-    '................',
-    '.....hhhhhh.....',
-    '....hhhhhhhh....',
-    '....hHHHHHHh....',
-    '....hHHHHHHh....',
-    '.....hhhhhh.....',
-    '....cjjjjjjc....',
-    '...jKKKKKKKKj...',
-    '...sKQQKKQQKs...',
-    '...sKQQKKQQKs...',
-    '....KKKkkKKK....',
-    '....pppppppp....',
-    '.....pPp..pp....',
-    '....pp....pP....',
-    '....bB....bB....',
-    '................',
-  ]] };
-  DEFS.player_side = { pal: palPlayer, frames: [[
-    '................',
-    '......hhhh......',
-    '.....hhhhhh.....',
-    '.....Hhhhhh.....',
-    '.....hhfeff.....',
-    '......ffFf......',
-    '.....cjjjjc.....',
-    '....KQjjjjj.....',
-    '....KQjjjjs.....',
-    '....KQjJjjs.....',
-    '.....jjjjj......',
-    '.....ppppp......',
-    '.....pP.pp......',
-    '.....pp.pP......',
-    '.....bB.bB......',
-    '................',
-  ], [
-    '................',
-    '......hhhh......',
-    '.....hhhhhh.....',
-    '.....Hhhhhh.....',
-    '.....hhfeff.....',
-    '......ffFf......',
-    '.....cjjjjc.....',
-    '....KQjjjjj.....',
-    '....KQjjjjs.....',
-    '....KQjJjjs.....',
-    '.....jjjjj......',
-    '.....ppppp......',
-    '....pP..pp......',
-    '....pp...pP.....',
-    '....bB...bB.....',
-    '................',
-  ]] };
+  // v14: rejilla 24×24 (+50% de detalle) y ciclo de andar de 4 frames por
+  // dirección [neutro, zancada A, neutro, zancada B] — el frame 0 (quieto) es neutro
+  const torsoDown = [
+    '........................',
+    '.........hhhhhh.........',
+    '........hhhhhhhh........',
+    '.......hhhhhhhhhh.......',
+    '.......Hhhhhhhhhh.......',
+    '.......hffffffffh.......',
+    '.......hfeffffefh.......',
+    '........fffFFfff........',
+    '.........ffffff.........',
+    '........cjjzzjjc........',
+    '......jjjkjzzjkjjj......',
+    '.....sjjjkjzzjkjjjs.....',
+    '.....sjjjkjzzjkjjjs.....',
+    '......jjJjjzzjjJjj......',
+    '.......jjjjzzjjjj.......',
+    '.......jjjjzzjjjj.......',
+  ];
+  const piernasFrontal = {
+    neutro: [
+      '.......pppppppppp.......',
+      '.......pppp..pppp.......',
+      '.......pPpp..ppPp.......',
+      '.......pppp..pppp.......',
+      '.......pppp..pppp.......',
+      '.......bbBb..bBbb.......',
+      '........................',
+      '........................',
+    ],
+    zancadaA: [
+      '.......pppppppppp.......',
+      '.......pppp..pppp.......',
+      '.......pPpp..ppPp.......',
+      '.......pppp...ppp.......',
+      '.......pppp..bBbb.......',
+      '.......bbBb.............',
+      '........................',
+      '........................',
+    ],
+    zancadaB: [
+      '.......pppppppppp.......',
+      '.......pppp..pppp.......',
+      '.......pPpp..ppPp.......',
+      '.......ppp...pppp.......',
+      '.......bbBb..pppp.......',
+      '.............bBbb.......',
+      '........................',
+      '........................',
+    ],
+  };
+  const ciclo = (torso, piernas) => [
+    [...torso, ...piernas.neutro],
+    [...torso, ...piernas.zancadaA],
+    [...torso, ...piernas.neutro],
+    [...torso, ...piernas.zancadaB],
+  ];
+  DEFS.player_down = { pal: palPlayer, frames: ciclo(torsoDown, piernasFrontal) };
+
+  const torsoUp = [
+    '........................',
+    '.........hhhhhh.........',
+    '........hhhhhhhh........',
+    '.......hhhhhhhhhh.......',
+    '.......hHHHHHHHHh.......',
+    '.......hHHHHHHHHh.......',
+    '.......hhHHHHHHhh.......',
+    '........hhhhhhhh........',
+    '.........hhhhhh.........',
+    '........cjjjjjjc........',
+    '......jjKKKKKKKKjj......',
+    '.....sjKQQKKKKQQKjs.....',
+    '.....sjKQQKKKKQQKjs.....',
+    '......jKKKKKKKKKKj......',
+    '......jKKKKkkKKKKj......',
+    '.......jjjjjjjjjj.......',
+  ];
+  DEFS.player_up = { pal: palPlayer, frames: ciclo(torsoUp, piernasFrontal) };
+
+  const torsoSide = [
+    '........................',
+    '..........hhhhhh........',
+    '.........hhhhhhhh.......',
+    '.........Hhhhhhhh.......',
+    '.........Hhhhhhhh.......',
+    '.........hhffffff.......',
+    '..........hffeff........',
+    '..........hffff.........',
+    '...........ffff.........',
+    '.........cjjjjjc........',
+    '........jKjjjjjjj.......',
+    '........jKQjjjjjjs......',
+    '........jKQjjjjjjs......',
+    '........jKQjjJjjj.......',
+    '.........jjjjjjjj.......',
+    '.........jjjjjjj........',
+  ];
+  const piernasSide = {
+    neutro: [
+      '.........pppppppp.......',
+      '..........pppppp........',
+      '..........pPpppp........',
+      '..........pppppp........',
+      '..........bbBbbb........',
+      '........................',
+      '........................',
+      '........................',
+    ],
+    zancadaA: [
+      '.........pppppppp.......',
+      '........ppp...ppp.......',
+      '.......pPp.....pPp......',
+      '.......pp......ppp......',
+      '......bBb.......bBbb....',
+      '........................',
+      '........................',
+      '........................',
+    ],
+    zancadaB: [
+      '.........pppppppp.......',
+      '........ppp...ppp.......',
+      '......pPp......pPp......',
+      '......ppp.......pp......',
+      '....bbBb.........bBb....',
+      '........................',
+      '........................',
+      '........................',
+    ],
+  };
+  DEFS.player_side = { pal: palPlayer, frames: ciclo(torsoSide, piernasSide) };
 
   // ===== FACELING: humanoide gris pálido SIN rostro =====
   const palFace = { f: '#d8ccb8', F: '#c0b4a0', t: '#8a8074', T: '#736a60', p: '#5a544c' };
@@ -499,11 +528,17 @@
       base = f ? f[frame % f.length] : null;
     }
     if (!base || !flip) return base;
-    const key = id + '::' + (frame % 2);
+    const key = id + '::' + frame;
     if (!mirrorCache[key] || mirrorCache[key].src !== base) {
       mirrorCache[key] = { src: base, canvas: mirror(base) };
     }
     return mirrorCache[key].canvas;
+  }
+
+  // nº de frames reales de un sprite (los llamadores animan con % frameCount)
+  function frameCount(id) {
+    if (overrides[id]) return overrides[id].length;
+    return cache[id] ? cache[id].length : 2;
   }
 
   // intenta cargar PNGs externos (hoja horizontal de frames de 48×48)
@@ -687,5 +722,5 @@
   }
 
   build();
-  window.Sprites = { get, tryOverrides, drawProp, list: () => Object.keys(DEFS) };
+  window.Sprites = { get, tryOverrides, drawProp, frameCount, list: () => Object.keys(DEFS) };
 })();

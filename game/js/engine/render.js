@@ -51,7 +51,7 @@
       return;
     }
 
-    const frame = Math.floor(t / 280) % 2;
+    const frame = Math.floor(t / 280) % Sprites.frameCount(def.glyph);
     const sprite = Sprites.get(def.glyph, frame);
     ctx.save();
     ctx.globalAlpha = Math.max(0.25, Math.min(1, lit + 0.25));
@@ -160,7 +160,7 @@
     const p = world.player;
     const dir = p.dir || 'down';
     const spriteId = dir === 'side' ? 'player_side' : 'player_' + dir;
-    const frame = world.moving ? Math.floor(t / 160) % 2 : 0;
+    const frame = world.moving ? Math.floor(t / 150) % Sprites.frameCount(spriteId) : 0;
     const img = Sprites.get(spriteId, frame);
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.4)';

@@ -13,6 +13,7 @@
   const SPRITE_H = 1.05;   // alto del billboard de actores
 
   let renderer, scene, camera, amb, plight, spot;
+  let composer = null;           // postprocesado (bloom + gamma); null => render directo
   let fogBase = 0.08;
   let glCanvas, overlay, octx, W, H;
   let levelKey = null;
@@ -44,9 +45,26 @@
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.BasicShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
 
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(CAM.fov, W / H, 0.1, 60);
+
+    // Postprocesado: bloom (solo emisivos casi blancos superan el umbral) + corrección
+    // gamma final — en r147 el composer NO aplica outputEncoding, sin ese pase la
+    // imagen sale lavada. Con NOFX no se crea (SwiftShader headless no lo aguanta).
+    if (!window.NOFX && THREE.EffectComposer && THREE.UnrealBloomPass && THREE.GammaCorrectionShader) {
+      try {
+        composer = new THREE.EffectComposer(renderer);
+        composer.addPass(new THREE.RenderPass(scene, camera));
+        composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.55, 0.4, 0.82));
+        composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
+      } catch (e) {
+        console.warn('Postpro desactivado:', e);
+        composer = null;
+      }
+    }
     amb = new THREE.AmbientLight(0xffffff, 0.4);
     plight = new THREE.PointLight(0xffffff, 1.7, 12, 1.8);
     plight.castShadow = true;
@@ -56,6 +74,8 @@
     // foco de la linterna (cono real; se enciende con F)
     spot = new THREE.SpotLight(0xfff0d0, 0, 11, 0.5, 0.45, 1.2);
     scene.add(spot, spot.target);
+    // luminarias + polvo (no-op con NOFX)
+    if (window.Atmos3D) Atmos3D.init(scene);
 
     // grano para el overlay
     grain = document.createElement('canvas');
@@ -265,7 +285,7 @@
 
     // --- SUELO CONTINUO: una sola textura seamless repetida con UV de mundo ---
     // (adiós a los cuadrados divididos: el patrón fluye entre tiles)
-    const floorTex = tex(tiles.suelo[0], 'suelo-seam');
+    const floorTex = tex((tiles.sueloHD && tiles.sueloHD[0]) || tiles.suelo[0], 'suelo-seam');
     floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
     const aguaTex = tex(tiles.agua, 'agua-tile');
     const floorPos = [], floorUv = [], floorIdx = [];
@@ -522,7 +542,7 @@
             M(new THREE.CylinderGeometry(0.035, 0.05, 1.5, 6), 0x2a2a30).position.y = 0.75;
             const globo = new THREE.Mesh(
               new THREE.SphereGeometry(0.12, 8, 6),
-              new THREE.MeshBasicMaterial({ color: 0xffb070 })  // emisivo: siempre encendida
+              new THREE.MeshBasicMaterial({ color: 0xffd9a8, toneMapped: false })  // emisivo: florece con el bloom
             );
             globo.position.y = 1.55;
             grp.add(globo);
@@ -578,6 +598,10 @@
     playerSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
     playerSprite.scale.set(1, SPRITE_H, 1);
     levelGroup.add(playerSprite);
+
+    // luminarias del nivel (emisores, haces y charcos van dentro del grupo:
+    // se eliminan solos con disposeLevel)
+    if (window.Atmos3D) Atmos3D.buildLevel(world, levelGroup);
 
     scene.add(levelGroup);
 
@@ -677,7 +701,7 @@
     if (svy > 0) sid = 'player_down';
     else if (svy < 0) sid = 'player_up';
     else { sid = 'player_side'; sflip = svx < 0; }
-    const pframe = world.moving ? Math.floor(t / 160) % 2 : 0;
+    const pframe = world.moving ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0;
     playerSprite.material.map = spriteTexFlip(sid, pframe, sflip);
     playerSprite.material.needsUpdate = true;
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
@@ -685,7 +709,19 @@
     // entidades (crear bajo demanda, ocultar si no visibles)
     for (const e of world.entities) {
       let s = entitySprites.get(e.uid);
-      if (!e.viva) { if (s) s.visible = false; continue; }
+      if (!e.viva) {
+        // disolución de muerte: se desvanece elevándose (en vez de esfumarse de golpe)
+        if (s && s.visible) {
+          if (!e._muerteT) e._muerteT = t;
+          const k = (t - e._muerteT) / 450;
+          if (k >= 1) { s.visible = false; s.material.opacity = 1; }
+          else {
+            s.material.opacity = 1 - k;
+            s.position.y = SPRITE_H / 2 + 0.02 + k * 0.22;
+          }
+        }
+        continue;
+      }
       if (!s) {
         s = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
         s.scale.set(1, SPRITE_H, 1);
@@ -696,7 +732,7 @@
       const visible = entVisible(world, e);
       s.visible = visible;
       if (!visible) continue;
-      const frame2 = Math.floor(t / 280) % 2;
+      const frame2 = Math.floor(t / 280) % Sprites.frameCount(e.def.glyph);
       const tx = spriteTex(e.def.glyph, frame2) || entCanvas(e, frame2);
       s.material.map = tx;
       s.material.needsUpdate = true;
@@ -714,6 +750,9 @@
       s.material.color.setHex(e.paralizada > 0 ? 0x77ccff : 0xffffff);
       if (e._hitT && t - e._hitT < 170) s.material.color.setHex(0xffaaaa);
       s.position.set(e.rx + 0.5 + ox, SPRITE_H / 2 + 0.02, e.ry + 0.5 + oz);
+      // respiración sutil (cada entidad con su fase: el grupo no late al unísono)
+      e._fase = e._fase ?? Math.random() * 6.28;
+      s.scale.y = SPRITE_H * (1 + 0.018 * Math.sin(t * 0.004 + e._fase));
     }
 
     // objetos recogidos
@@ -739,6 +778,9 @@
     }
     if (scene.fog)
       scene.fog.density += ((luzOn ? fogBase * 0.45 : fogBase) - scene.fog.density) * 0.06;
+
+    // luminarias cercanas + polvo en suspensión
+    if (window.Atmos3D) Atmos3D.frame(world, t, px, pz, luzOn);
 
     // cámara Octopath: baja, cercana, con inercia, bob sutil y rotación 90° (Q)
     if (world.moving) camBobT += 0.11;
@@ -784,7 +826,12 @@
     );
     camera.lookAt(frame._look);
 
-    renderer.render(scene, camera);
+    if (composer && !window.NOFX) {
+      try { composer.render(); }
+      catch (e) { console.warn('Postpro caído, render directo:', e); composer = null; renderer.render(scene, camera); }
+    } else {
+      renderer.render(scene, camera);
+    }
     drawOverlay(world, t);
 
     if (window.DEBUG3D_ON) {

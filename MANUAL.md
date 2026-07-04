@@ -10,8 +10,10 @@ Guía de todo lo que puedes hacer/modificar tú mismo, sin programar.
 **Doble clic en `game/index.html`.** Nada que instalar. Funciona sin internet.
 
 El juego se renderiza en **3D real** (motor Three.js incluido en el proyecto) con cámara
-inclinada estilo Octopath Traveler. Si algún equipo no soporta WebGL o prefieres la vista
-cenital 2D clásica: `index.html?render=2d`.
+inclinada estilo Octopath Traveler, **iluminación dinámica** (fluorescentes y farolas con
+halo), **postprocesado cinematográfico** (bloom + tone mapping) y polvo en suspensión.
+Si algún equipo no soporta WebGL o prefieres la vista cenital 2D clásica: `index.html?render=2d`.
+Si va lento: `index.html?nofx=1` desactiva todos los efectos (también el postprocesado).
 
 | Tecla | Acción |
 |---|---|
@@ -88,6 +90,13 @@ genera exactamente los mismos mapas. Ideal para que tu chat juegue tu misma part
 **¿Tienes una imagen que NO cumple el formato?** (otro tamaño, sin frames, con fondo…)
 → Déjala en cualquier carpeta del proyecto y dile a Claude *«convierte esta imagen en el sprite
 de X»*. Claude la recorta, la escala a 48×48, le monta la hoja de frames y la deja lista.
+
+## 5a. Fuentes de la interfaz
+
+La UI usa dos fuentes pixel incluidas en `game/assets/fonts/` (**Press Start 2P** para
+títulos y **VT323** para el texto; ambas con licencia libre OFL, incluida en esa carpeta).
+Si algún día quieres otra fuente, basta con reemplazar el archivo `.ttf` por otro con el
+mismo nombre y recargar. Los iconos del HUD son pixel-art generado por el propio juego.
 
 ## 5b. Sonidos
 

@@ -40,7 +40,10 @@ Sin módulos ES: cada archivo de `game/js/` es un IIFE que expone un global en `
 ```
 data.js → engine/rng.js → mapgen/mapgen.js → engine/tiles.js → engine/sprites.js
   → engine/effects.js → audio-manifest.js → engine/sfx.js → engine/fov.js
-  → systems/entities.js → systems/rules.js → engine/render.js → systems/game.js → ui/ui.js → main.js
+  → systems/entities.js → systems/rules.js → engine/render.js
+  → lib/three.min.js → lib/shaders/* → lib/postprocessing/* (postpro UMD r147)
+  → engine/atmos3d.js → engine/render3d.js → systems/game.js
+  → ui/icons.js → ui/ui.js → ui/minimap.js → main.js
 ```
 
 `audio-manifest.js` lo genera `pipeline/download-audio.js` (audios ambientales reales de la wiki
@@ -53,6 +56,21 @@ texturas CanvasTexture reutilizando tiles/sprites/render.js→exitToCanvas; cám
 PointLight con sombras + FogExp2; billboards). `?render=2d` usa el Canvas clásico (render.js) como
 respaldo íntegro. Selftests y capturas de lógica: SIEMPRE `?render=2d&nofx=1`. Capturas 3D en
 headless: `--use-angle=swiftshader` (lento). Cargar three.min.js y render3d.js tras render.js.
+
+**Capa visual v14**: postpro con EffectComposer + UnrealBloom (threshold alto: solo florecen
+materiales `toneMapped:false`) + GammaCorrection como ÚLTIMO pase (obligatorio en r147, si no la
+imagen sale lavada) + ACES tone mapping; los addons UMD vienen de
+`three@0.147.0/examples/js/` (r147 es la última versión con examples/js clásico).
+`engine/atmos3d.js`: luminarias deterministas por bioma (tubo/colgante/farola, emisor+haz+charco
+fusionados) con **pool fijo de 6 PointLights** sin sombra (nunca add/remove: evita recompilar
+shaders) + polvo THREE.Points. TODO lo de postpro/atmos es no-op con `?nofx=1` (SwiftShader
+headless no aguanta el bloom en dump-dom largos; capturas cortas sí). `ui/icons.js`: iconos
+pixel-art de la UI (matrices 12×12) + mapa emoji→icono (`Icons.deEmoji`) + marco 9-slice en la
+variable CSS `--marco`; los emojis en rules.js/textos se traducen en la UI, no en los datos.
+Fuentes OFL vendorizadas en `game/assets/fonts/`. El selftest expone `luminarias` en su JSON
+(-1 = NOFX). `Tiles.TILE=48` está ACOPLADO al render 2D (escala mundo→pantalla): no subirlo;
+el suelo HD del 3D va en `tiles.sueloHD` (96px, rng derivado propio). Sprites: rejilla 16 ó 24
+según `rows.length` (salida siempre 48px); animar con `% Sprites.frameCount(id)`, nunca `% 2`.
 
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate

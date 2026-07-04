@@ -11,9 +11,20 @@
   };
 
   function show(name) {
+    // fundido cosmético; el swap de display es SÍNCRONO (el selftest lo exige)
+    const fade = $('fade');
+    if (fade && !window.NOFX) {
+      fade.style.opacity = '1';
+      requestAnimationFrame(() => requestAnimationFrame(() => { fade.style.opacity = '0'; }));
+    }
     for (const [k, el] of Object.entries(screens))
       el.style.display = k === name ? 'flex' : 'none';
     if (name === 'game') screens.game.style.display = 'flex';
+    if (name === 'card') {
+      // re-dispara la animación de entrada de la tarjeta
+      const card = screens.card.querySelector('.level-card');
+      if (card) { card.classList.remove('card-in'); void card.offsetWidth; card.classList.add('card-in'); }
+    }
   }
 
   // ---------- registro ----------
@@ -35,27 +46,33 @@
     $('bar-hambre').style.width = world.player.hambre + '%';
     $('hud-level').textContent = `${world.level.wikiTitle} · Peligro ${world.level.peligro}/5`;
     $('hud-turn').textContent = `Turno ${world.turn}`;
-    $('hud-seed').textContent = `🎲 ${world.runSeed}`;
+    const seedEl = $('hud-seed');
+    seedEl.textContent = '';
+    if (window.Icons) seedEl.appendChild(Icons.img('dado', 13));
+    seedEl.appendChild(document.createTextNode(' ' + world.runSeed));
 
+    const ICONOS_INV = {
+      agua_almendras: 'refresco', botiquin: 'botiquin', linterna: 'linterna',
+      chaqueta: 'chaqueta', amuleto: 'cuadro', llave_nivel: 'llave',
+      tuberia: 'tuberia', fuego_griego: 'fuego', guante_paralisis: 'guante',
+      detector: 'antena', trebol: 'trebol',
+    };
     const inv = $('hud-inv');
     inv.innerHTML = '';
     for (let i = 0; i < 6; i++) {
       const slot = document.createElement('div');
       slot.className = 'inv-slot';
       const id = world.player.inv[i];
+      const k = document.createElement('span');
+      k.className = 'k'; k.textContent = i + 1;
+      slot.appendChild(k);
       if (id) {
         const def = world.data.objects[id];
-        const ic = {
-          agua_almendras: '🥤', botiquin: '🩹', linterna: '🔦', chaqueta: '🧥',
-          amuleto: '🖼', llave_nivel: '🗝', tuberia: '🔧', fuego_griego: '🔥',
-          guante_paralisis: '🧤', detector: '📡', trebol: '🍀',
-        }[id] || '❓';
-        slot.innerHTML = `<span class="k">${i + 1}</span><span class="n">${ic}</span>`;
+        const ic = ICONOS_INV[id] || 'interrogante';
+        slot.appendChild(window.Icons ? Icons.img(ic, 22) : document.createTextNode('?'));
         slot.title = `${def.nombre} — ${def.descripcion}`;
         if (id === 'linterna' && world.player.luz) slot.classList.add('active');
         slot.onclick = () => showItemInfo(i, ic);
-      } else {
-        slot.innerHTML = `<span class="k">${i + 1}</span>`;
       }
       inv.appendChild(slot);
     }
@@ -85,7 +102,10 @@
     const def = world.data.objects[id];
     world.busy = true;
     if (window.Sfx) Sfx.play('ui');
-    $('item-icon').textContent = icono;
+    const iconEl = $('item-icon');
+    iconEl.textContent = '';
+    if (window.Icons && Icons.has(icono)) iconEl.appendChild(Icons.img(icono, 20));
+    else iconEl.textContent = icono;
     $('item-name').textContent = def.nombre;
     $('item-desc').textContent = def.descripcion;
     $('item-effect').textContent = efectoLegible(def);
@@ -121,17 +141,23 @@
     $('card-quote').textContent = '«' + def.cita + '»';
     const rulesEl = $('card-rules');
     rulesEl.innerHTML = '';
+    const chip = (icono, texto) => {
+      const span = document.createElement('span');
+      const id = window.Icons ? (Icons.has(icono) ? icono : Icons.deEmoji(icono)) : null;
+      if (id) span.appendChild(Icons.img(id, 13));
+      else if (icono) span.appendChild(document.createTextNode(icono));
+      span.appendChild(document.createTextNode(' ' + texto));
+      return span;
+    };
     for (const rid of def.reglas || []) {
       const r = Rules.get(rid);
       if (!r) continue;
-      const span = document.createElement('span');
-      span.textContent = `${r.icono} ${r.nombre}`;
+      const span = chip(r.icono, r.nombre);
       span.title = r.desc;
       rulesEl.appendChild(span);
     }
     if (def.esEscape) {
-      const span = document.createElement('span');
-      span.textContent = '⭐ POSIBLE RUTA DE ESCAPE';
+      const span = chip('estrella', 'POSIBLE RUTA DE ESCAPE');
       span.style.borderColor = '#4ade80';
       span.style.color = '#8ae8a0';
       rulesEl.appendChild(span);

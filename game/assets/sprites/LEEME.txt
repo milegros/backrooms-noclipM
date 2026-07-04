@@ -5,8 +5,12 @@ Coloca aquí archivos PNG para sustituir cualquier sprite del juego sin tocar c�
 
 Formato:
  - Nombre del archivo: <id>.png  (ej.: hound.png, player_down.png, faceling.png)
- - Hoja horizontal de frames de 48×48 px (ej.: 96×48 = 2 frames de animación).
+ - Hoja horizontal de frames de 48×48 px. Puedes poner los frames que quieras:
+   96×48 = 2 frames, 192×48 = 4 frames… El juego los anima en bucle.
  - Fondo transparente.
+
+Nota: el jugador integrado trae 4 frames de ciclo de andar por dirección (v14);
+si lo sustituyes con menos frames, también funciona.
 
 IDs disponibles:
  Jugador:   player_down, player_up, player_side  (side mira a la derecha; se voltea solo)

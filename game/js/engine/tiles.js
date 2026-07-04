@@ -37,129 +37,134 @@
   }
 
   // ---------- suelos (por estilo de la ficha) ----------
-  function floorTile(pal, estilo, rng, variant) {
-    const c = canvas(TILE, TILE), ctx = c.getContext('2d');
+  // T parametrizable: 48 para el 2D (acoplado a la escala de pantalla) y 96 para
+  // el suelo HD del 3D (motas 2× más finas, líneas más nítidas). k = factor.
+  function floorTile(pal, estilo, rng, variant, T = TILE) {
+    const k = T / TILE;
+    const k2 = k * k; // los conteos de motas escalan por área
+    const c = canvas(T, T), ctx = c.getContext('2d');
     ctx.fillStyle = shade(pal.suelo, 0.92 + variant * 0.06);
-    ctx.fillRect(0, 0, TILE, TILE);
+    ctx.fillRect(0, 0, T, T);
     switch (estilo) {
       case 'moqueta_humeda': // Level 0: moqueta empapada con cercos de humedad
         ctx.globalAlpha = 0.3;
         ctx.fillStyle = shade(pal.detalle, 0.75);
         ctx.beginPath();
-        ctx.ellipse(12 + (variant * 13) % 24, 14 + (variant * 7) % 20, 14, 9, 0.4, 0, 7);
+        ctx.ellipse((12 + (variant * 13) % 24) * k, (14 + (variant * 7) % 20) * k, 14 * k, 9 * k, 0.4, 0, 7);
         ctx.fill();
         ctx.globalAlpha = 1;
         // sin break: continúa con la textura de moqueta
       case 'moqueta':
-        speckle(ctx, rng, shade(pal.suelo, 0.78), 170, 0, 0, TILE, TILE);
-        speckle(ctx, rng, shade(pal.suelo, 1.14), 110, 0, 0, TILE, TILE);
+        speckle(ctx, rng, shade(pal.suelo, 0.78), 170 * k2, 0, 0, T, T);
+        speckle(ctx, rng, shade(pal.suelo, 1.14), 110 * k2, 0, 0, T, T);
         if (variant === 2 || estilo === 'moqueta_humeda')
-          speckle(ctx, rng, shade(pal.detalle, 0.9), 40, 8, 8, 32, 32, 2);
+          speckle(ctx, rng, shade(pal.detalle, 0.9), 40 * k2, 8 * k, 8 * k, 32 * k, 32 * k, 2);
         break;
       case 'moqueta_cenefa':
-        speckle(ctx, rng, shade(pal.suelo, 0.8), 150, 0, 0, TILE, TILE);
-        speckle(ctx, rng, shade(pal.suelo, 1.12), 90, 0, 0, TILE, TILE);
+        speckle(ctx, rng, shade(pal.suelo, 0.8), 150 * k2, 0, 0, T, T);
+        speckle(ctx, rng, shade(pal.suelo, 1.12), 90 * k2, 0, 0, T, T);
         ctx.strokeStyle = shade(pal.detalle, 1.3);      // cenefa de hotel
-        ctx.setLineDash([6, 4]);
-        ctx.strokeRect(5.5, 5.5, TILE - 11, TILE - 11);
+        ctx.setLineDash([6 * k, 4 * k]);
+        ctx.strokeRect(5.5 * k, 5.5 * k, T - 11 * k, T - 11 * k);
         ctx.setLineDash([]);
         break;
       case 'hormigon':
-        speckle(ctx, rng, shade(pal.suelo, 0.82), 70, 0, 0, TILE, TILE);
+        speckle(ctx, rng, shade(pal.suelo, 0.82), 70 * k2, 0, 0, T, T);
         if (variant > 0) {
           ctx.strokeStyle = shade(pal.suelo, 0.66);
           ctx.beginPath();
-          let x = rng.int(8, 40), y = 0;
+          let x = rng.int(8 * k, 40 * k), y = 0;
           ctx.moveTo(x, y);
-          while (y < TILE) { x += rng.int(-4, 4); y += rng.int(4, 8); ctx.lineTo(x, y); }
+          while (y < T) { x += rng.int(-4 * k, 4 * k); y += rng.int(4 * k, 8 * k); ctx.lineTo(x, y); }
           ctx.stroke();
         }
         break;
       case 'baldosa':
       case 'baldosa_oscura':
-        if (estilo === 'baldosa_oscura') { ctx.fillStyle = shade(pal.suelo, 0.7); ctx.fillRect(0, 0, TILE, TILE); }
-        speckle(ctx, rng, shade(pal.suelo, 1.08), 32, 0, 0, TILE, TILE);
+        if (estilo === 'baldosa_oscura') { ctx.fillStyle = shade(pal.suelo, 0.7); ctx.fillRect(0, 0, T, T); }
+        speckle(ctx, rng, shade(pal.suelo, 1.08), 32 * k2, 0, 0, T, T);
         ctx.strokeStyle = shade(pal.suelo, estilo === 'baldosa_oscura' ? 1.5 : 0.74);
-        ctx.strokeRect(0.5, 0.5, TILE - 1, TILE - 1);
-        ctx.strokeRect(0.5, 0.5, TILE / 2, TILE / 2);
-        ctx.strokeRect(TILE / 2 + 0.5, TILE / 2 + 0.5, TILE / 2 - 1, TILE / 2 - 1);
+        ctx.strokeRect(0.5, 0.5, T - 1, T - 1);
+        ctx.strokeRect(0.5, 0.5, T / 2, T / 2);
+        ctx.strokeRect(T / 2 + 0.5, T / 2 + 0.5, T / 2 - 1, T / 2 - 1);
         break;
       case 'tablones':
       case 'tablones_claros': {
         const base = estilo === 'tablones_claros' ? 1.15 : 1;
+        const alto = 12 * k;
         for (let i = 0; i < 4; i++) {
           ctx.fillStyle = shade(pal.suelo, base * (0.85 + ((i + variant) % 3) * 0.1));
-          ctx.fillRect(0, i * 12, TILE, 12);
+          ctx.fillRect(0, i * alto, T, alto);
           ctx.strokeStyle = shade(pal.suelo, 0.6);
-          ctx.beginPath(); ctx.moveTo(0, i * 12 + 0.5); ctx.lineTo(TILE, i * 12 + 0.5); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, i * alto + 0.5); ctx.lineTo(T, i * alto + 0.5); ctx.stroke();
           // juntas de tablón desfasadas + vetas
-          const jx = ((i * 17 + variant * 23) % TILE);
-          ctx.beginPath(); ctx.moveTo(jx, i * 12); ctx.lineTo(jx, i * 12 + 12); ctx.stroke();
+          const jx = ((i * 17 + variant * 23) % TILE) * k;
+          ctx.beginPath(); ctx.moveTo(jx, i * alto); ctx.lineTo(jx, i * alto + alto); ctx.stroke();
           ctx.strokeStyle = shade(pal.suelo, 0.75 * base);
-          ctx.beginPath(); ctx.moveTo(4, i * 12 + 6); ctx.lineTo(TILE - rng.int(4, 20), i * 12 + 6); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(4 * k, i * alto + 6 * k); ctx.lineTo(T - rng.int(4, 20) * k, i * alto + 6 * k); ctx.stroke();
         }
         break;
       }
       case 'piedra':
-        speckle(ctx, rng, shade(pal.suelo, 0.8), 60, 0, 0, TILE, TILE);
+        speckle(ctx, rng, shade(pal.suelo, 0.8), 60 * k2, 0, 0, T, T);
         ctx.strokeStyle = shade(pal.suelo, 0.65);
         for (const [ax, ay, bx, by] of [[0, 18, 20, 14], [20, 14, 48, 22], [14, 48, 22, 30], [22, 30, 48, 36], [0, 34, 14, 30]]) {
-          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(ax * k, ay * k); ctx.lineTo(bx * k, by * k); ctx.stroke();
         }
         break;
       case 'rejilla':
         ctx.fillStyle = shade(pal.suelo, 0.75);
-        ctx.fillRect(0, 0, TILE, TILE);
+        ctx.fillRect(0, 0, T, T);
         ctx.strokeStyle = shade(pal.suelo, 1.3);
-        for (let i = 4; i < TILE; i += 8) {
-          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TILE); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(TILE, i); ctx.stroke();
+        for (let i = 4 * k; i < T; i += 8 * k) {
+          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, T); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(T, i); ctx.stroke();
         }
         ctx.strokeStyle = shade(pal.suelo, 1.6);
-        ctx.strokeRect(1.5, 1.5, TILE - 3, TILE - 3);
+        ctx.strokeRect(1.5, 1.5, T - 3, T - 3);
         break;
       case 'negro':
         ctx.fillStyle = shade(pal.suelo, 0.85);
-        ctx.fillRect(0, 0, TILE, TILE);
-        speckle(ctx, rng, shade(pal.detalle, 1.2), 12, 0, 0, TILE, TILE);
+        ctx.fillRect(0, 0, T, T);
+        speckle(ctx, rng, shade(pal.detalle, 1.2), 12 * k2, 0, 0, T, T);
         break;
       case 'nieve':
-        speckle(ctx, rng, shade(pal.suelo, 1.1), 90, 0, 0, TILE, TILE);
-        speckle(ctx, rng, '#ffffff', 30, 0, 0, TILE, TILE);
+        speckle(ctx, rng, shade(pal.suelo, 1.1), 90 * k2, 0, 0, T, T);
+        speckle(ctx, rng, '#ffffff', 30 * k2, 0, 0, T, T);
         if (variant === 2) { // huellas antiguas
           ctx.fillStyle = shade(pal.suelo, 0.85);
-          ctx.beginPath(); ctx.ellipse(18, 16, 3, 5, 0.3, 0, 7); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(28, 30, 3, 5, 0.3, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(18 * k, 16 * k, 3 * k, 5 * k, 0.3, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(28 * k, 30 * k, 3 * k, 5 * k, 0.3, 0, 7); ctx.fill();
         }
         break;
       case 'blanco':
         ctx.fillStyle = shade(pal.suelo, 1.0);
-        ctx.fillRect(0, 0, TILE, TILE);
-        speckle(ctx, rng, shade(pal.suelo, 0.94), 20, 0, 0, TILE, TILE);
+        ctx.fillRect(0, 0, T, T);
+        speckle(ctx, rng, shade(pal.suelo, 0.94), 20 * k2, 0, 0, T, T);
         break;
       case 'tierra':
-        speckle(ctx, rng, shade(pal.suelo, 0.8), 100, 0, 0, TILE, TILE);
-        speckle(ctx, rng, shade(pal.detalle, 1.0), 26, 0, 0, TILE, TILE, 2);
+        speckle(ctx, rng, shade(pal.suelo, 0.8), 100 * k2, 0, 0, T, T);
+        speckle(ctx, rng, shade(pal.detalle, 1.0), 26 * k2, 0, 0, T, T, 2);
         break;
       case 'hierba':
-        speckle(ctx, rng, shade(pal.suelo, 0.78), 90, 0, 0, TILE, TILE);
-        speckle(ctx, rng, shade(pal.detalle, 1.15), 40, 0, 0, TILE, TILE, 2);
+        speckle(ctx, rng, shade(pal.suelo, 0.78), 90 * k2, 0, 0, T, T);
+        speckle(ctx, rng, shade(pal.detalle, 1.15), 40 * k2, 0, 0, T, T, 2);
         ctx.strokeStyle = shade(pal.detalle, 1.3);      // briznas
-        for (let i = 0; i < 8; i++) {
-          const gx = rng.int(3, TILE - 3), gy = rng.int(3, TILE - 3);
-          ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + rng.int(-2, 2), gy - 4); ctx.stroke();
+        for (let i = 0; i < 8 * k2; i++) {
+          const gx = rng.int(3 * k, T - 3 * k), gy = rng.int(3 * k, T - 3 * k);
+          ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + rng.int(-2, 2) * k, gy - 4 * k); ctx.stroke();
         }
         break;
       case 'adoquin':
-        speckle(ctx, rng, shade(pal.suelo, 0.85), 46, 0, 0, TILE, TILE);
+        speckle(ctx, rng, shade(pal.suelo, 0.85), 46 * k2, 0, 0, T, T);
         ctx.strokeStyle = shade(pal.suelo, 0.7);
-        for (let y = 12; y < TILE; y += 12) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(TILE, y); ctx.stroke(); }
-        for (let x = 12; x < TILE; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, TILE); ctx.stroke(); }
+        for (let y = 12 * k; y < T; y += 12 * k) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(T, y); ctx.stroke(); }
+        for (let x = 12 * k; x < T; x += 24 * k) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, T); ctx.stroke(); }
         break;
       case 'panel':
         ctx.strokeStyle = shade(pal.suelo, 0.84);
-        ctx.strokeRect(2.5, 2.5, TILE - 5, TILE - 5);
-        speckle(ctx, rng, shade(pal.suelo, 1.06), 14, 0, 0, TILE, TILE);
+        ctx.strokeRect(2.5 * k, 2.5 * k, T - 5 * k, T - 5 * k);
+        speckle(ctx, rng, shade(pal.suelo, 1.06), 14 * k2, 0, 0, T, T);
         break;
     }
     return c;
@@ -654,9 +659,13 @@
       const estiloPared = levelDef.estilo?.pared ?? fb[0];
       const estiloSuelo = levelDef.estilo?.suelo ?? fb[1];
       const wallStyle = estiloPared === 'arbol' ? 'arbol' : estiloPared === 'roca' ? 'roca' : 'tabique';
+      // suelo HD (96px) solo para el render 3D — rng derivado PROPIO para no
+      // desplazar la secuencia del rng que consumen las demás texturas
+      const rngHD = RNG.create(`tilesHD::${levelDef.id}::${estiloSuelo}`);
       const out = {
         wallStyle,
         suelo: [0, 1, 2].map((v) => floorTile(pal, estiloSuelo, rng, v)),
+        sueloHD: [0, 1, 2].map((v) => floorTile(pal, estiloSuelo, rngHD, v, TILE * 2)),
         agua: aguaTile(pal, rng),
         decor: decorTile(pal, levelDef.bioma, estiloSuelo, rng),
         caraFull: wallStyle === 'tabique' ? buildCaraFull(pal, estiloPared, rng) : null,

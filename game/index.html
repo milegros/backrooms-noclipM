@@ -25,7 +25,7 @@
         </div>
         <p id="profile-records"></p>
         <div class="profile-row">
-          <button id="btn-codex" class="btn-small">📓 Códice del Errante</button>
+          <button id="btn-codex" class="btn-small"><span data-icon="libro" data-icon-size="13"></span> Códice del Errante</button>
           <button id="btn-profile-export" class="btn-small">Exportar</button>
           <button id="btn-profile-import" class="btn-small">Importar</button>
           <input id="profile-import-file" type="file" accept=".json,application/json" style="display:none">
@@ -34,8 +34,8 @@
       </div>
       <div class="seed-row">
         <label>Semilla: <input id="seed-input" type="text" spellcheck="false" placeholder="aleatoria"></label>
-        <label style="margin-left:16px">🔊 <input type="range" id="vol-slider-title" min="0" max="100" step="1" style="vertical-align:middle;width:110px"></label>
-        <button id="btn-sound-menu-title" class="btn-small" style="margin-left:8px;margin-top:0">⚙ Sonido</button>
+        <label style="margin-left:16px"><span data-icon="altavoz" data-icon-size="13"></span> <input type="range" id="vol-slider-title" min="0" max="100" step="1" style="vertical-align:middle;width:110px"></label>
+        <button id="btn-sound-menu-title" class="btn-small" style="margin-left:8px;margin-top:0"><span data-icon="engranaje" data-icon-size="13"></span> Sonido</button>
       </div>
       <button id="btn-start" class="btn-big">DESPERTAR EN LEVEL 0</button>
       <button id="btn-continue" class="btn-small" style="display:none">Continuar partida guardada</button>
@@ -54,7 +54,7 @@
       <blockquote class="card-quote" id="card-quote"></blockquote>
       <div class="card-rules" id="card-rules"></div>
       <div class="card-foot">
-        <a id="card-wiki" href="#" target="_blank" rel="noopener">📖 Leer la página completa en la wiki</a>
+        <a id="card-wiki" href="#" target="_blank" rel="noopener"><span data-icon="libro" data-icon-size="13"></span> Leer la página completa en la wiki</a>
         <button id="btn-enter" class="btn-big">ENTRAR</button>
       </div>
     </div>
@@ -68,14 +68,14 @@
       <div id="hud-top">
         <span id="hud-level"></span>
         <span id="hud-turn"></span>
-        <span id="hud-vol">🔊 <input type="range" id="vol-slider" min="0" max="100" step="1"> <button id="btn-sound-menu" title="Ajustes de sonido">⚙</button></span>
+        <span id="hud-vol"><span data-icon="altavoz" data-icon-size="13"></span> <input type="range" id="vol-slider" min="0" max="100" step="1"> <button id="btn-sound-menu" title="Ajustes de sonido"><span data-icon="engranaje" data-icon-size="13"></span></button></span>
         <span id="hud-seed"></span>
       </div>
       <div id="hud-bars">
-        <div class="bar"><i>♥</i><div class="track"><div id="bar-salud" class="fill salud"></div></div></div>
-        <div class="bar"><i>☯</i><div class="track"><div id="bar-cordura" class="fill cordura"></div></div></div>
-        <div class="bar"><i>💧</i><div class="track"><div id="bar-sed" class="fill sed"></div></div></div>
-        <div class="bar"><i>🍞</i><div class="track"><div id="bar-hambre" class="fill hambre"></div></div></div>
+        <div class="bar"><i data-icon="corazon" data-icon-size="15"></i><div class="track"><div id="bar-salud" class="fill salud"></div></div></div>
+        <div class="bar"><i data-icon="yin" data-icon-size="15"></i><div class="track"><div id="bar-cordura" class="fill cordura"></div></div></div>
+        <div class="bar"><i data-icon="gota" data-icon-size="15"></i><div class="track"><div id="bar-sed" class="fill sed"></div></div></div>
+        <div class="bar"><i data-icon="pan" data-icon-size="15"></i><div class="track"><div id="bar-hambre" class="fill hambre"></div></div></div>
       </div>
       <div id="hud-inv"></div>
       <canvas id="minimap" width="156" height="156" title="Minimapa (N para ampliar)"></canvas>
@@ -84,7 +84,7 @@
       <div id="dice-overlay" style="display:none"><div id="dice-box"><div id="dice-face">?</div><p id="dice-text"></p></div></div>
       <div id="exit-modal" style="display:none">
         <div class="modal-box">
-          <h3>🚪 Salida encontrada</h3>
+          <h3><span data-icon="puerta" data-icon-size="15"></span> Salida encontrada</h3>
           <p id="exit-text"></p>
           <p id="exit-warn" class="warn"></p>
           <div class="modal-btns">
@@ -94,7 +94,7 @@
         </div>
       </div>
       <div id="journal-panel" style="display:none">
-        <h3>📓 Diario de ruta</h3>
+        <h3><span data-icon="libro" data-icon-size="14"></span> Diario de ruta</h3>
         <ol id="journal-list"></ol>
         <button id="btn-journal-close" class="btn-small">Cerrar (J)</button>
       </div>
@@ -118,7 +118,7 @@
   <!-- Ajustes de sonido -->
   <div id="sound-menu" style="display:none">
     <div class="modal-box">
-      <h3>⚙ Ajustes de sonido</h3>
+      <h3><span data-icon="engranaje" data-icon-size="15"></span> Ajustes de sonido</h3>
       <div class="sound-row"><label>General</label><input type="range" id="snd-general" min="0" max="100"><span id="snd-general-v"></span></div>
       <div class="sound-row"><label>Efectos</label><input type="range" id="snd-fx" min="0" max="100"><span id="snd-fx-v"></span></div>
       <div class="sound-row"><label>Ambiente / música</label><input type="range" id="snd-amb" min="0" max="100"><span id="snd-amb-v"></span></div>
@@ -135,7 +135,7 @@
   <!-- Códice del Errante (superpuesto, accesible desde título y juego con C) -->
   <div id="codex-panel" style="display:none">
     <div class="codex-box">
-      <h2>📓 Códice del Errante — <span id="codex-name"></span></h2>
+      <h2><span data-icon="libro" data-icon-size="17"></span> Códice del Errante — <span id="codex-name"></span></h2>
       <p id="codex-records" class="codex-records"></p>
       <div id="codex-levels"></div>
       <h3>Últimas expediciones</h3>
@@ -153,10 +153,13 @@
       <h3>Tu recorrido</h3>
       <ol id="end-journal"></ol>
       <button id="btn-again" class="btn-big">DESPERTAR DE NUEVO EN LEVEL 0</button>
-      <button id="btn-end-codex" class="btn-small">📓 Ver códice</button>
+      <button id="btn-end-codex" class="btn-small"><span data-icon="libro" data-icon-size="13"></span> Ver códice</button>
       <button id="btn-end-title" class="btn-small">Volver al título</button>
     </div>
   </div>
+
+  <!-- capa de fundido entre pantallas (solo cosmética) -->
+  <div id="fade"></div>
 </div>
 
 <script src="js/data.js"></script>
@@ -172,8 +175,17 @@
 <script src="js/systems/rules.js"></script>
 <script src="js/engine/render.js"></script>
 <script src="js/lib/three.min.js"></script>
+<script src="js/lib/shaders/CopyShader.js"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js"></script>
+<script src="js/lib/postprocessing/EffectComposer.js"></script>
+<script src="js/lib/postprocessing/RenderPass.js"></script>
+<script src="js/lib/postprocessing/ShaderPass.js"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js"></script>
+<script src="js/engine/atmos3d.js"></script>
 <script src="js/engine/render3d.js"></script>
 <script src="js/systems/game.js"></script>
+<script src="js/ui/icons.js"></script>
 <script src="js/ui/ui.js"></script>
 <script src="js/ui/minimap.js"></script>
 <script src="js/main.js"></script>
