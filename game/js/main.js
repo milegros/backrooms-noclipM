@@ -323,6 +323,12 @@
   let cursorY = window.innerHeight / 2;
   let aButtonDown = false;
   let dragTarget = null;
+  
+  let usingGamepad = false;
+  const hideGamepadCursor = () => { usingGamepad = false; if (vCursor) vCursor.style.display = 'none'; };
+  document.addEventListener('mousemove', hideGamepadCursor);
+  document.addEventListener('mousedown', hideGamepadCursor);
+  document.addEventListener('wheel', hideGamepadCursor);
 
   function pollGamepad(t) {
     if (!navigator.getGamepads) return;
@@ -363,6 +369,12 @@
       if (Math.abs(gp.axes[1]) > 0.1) dy = gp.axes[1];
     }
 
+    let anyInput = false;
+    for(let i=0; i<btns.length; i++) if (pressed(i)) anyInput = true;
+    if (anyInput || Math.abs(gp.axes[0]) > 0.1 || Math.abs(gp.axes[1]) > 0.1) {
+      usingGamepad = true;
+    }
+
     if (uiOpen) {
       if (!vCursor) {
         vCursor = document.getElementById('virtual-cursor');
@@ -373,10 +385,14 @@
         }
       }
       
-      if (vCursor.style.display !== 'block') {
-        vCursor.style.display = 'block';
-        cursorX = window.innerWidth / 2;
-        cursorY = window.innerHeight / 2;
+      if (usingGamepad) {
+        if (vCursor.style.display !== 'block') {
+          vCursor.style.display = 'block';
+          cursorX = window.innerWidth / 2;
+          cursorY = window.innerHeight / 2;
+        }
+      } else {
+        if (vCursor.style.display === 'block') vCursor.style.display = 'none';
       }
       
       if (dx !== 0 || dy !== 0) {
