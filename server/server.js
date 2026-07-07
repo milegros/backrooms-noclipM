@@ -121,9 +121,9 @@ wss.on('connection', (ws, req) => {
     else if (m.t === 'mochila') sala.mochila(jug, m);
     else if (m.t === 'admin') {
       // contraseña de guardián desde Ajustes: desbloquea debug y barras
-      jug.esAdmin = m.clave === ADMIN_CLAVE ? true : jug.esAdmin;
+      intentarAdmin(jug, sala, m.clave);
       sala.enviar(ws, { t: 'admin', si: !!jug.esAdmin });
-      if (m.clave !== ADMIN_CLAVE)
+      if (!jug.esAdmin)
         sala.enviar(ws, { t: 'aviso', txt: 'La clave no abre nada.' });
     }
     else if (m.t === 'chat') {
@@ -215,6 +215,24 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
 // ---------- comandos de chat (moderación del streamer) ----------
 const { todas: salasVivas } = require('./sala');
 
+// intento de clave de guardián con FRENO anti fuerza bruta: los espectadores
+// PRUEBAN claves en directo — 5 fallos en 10 min silencian los intentos
+function intentarAdmin(jug, sala, clave) {
+  const ahora = Date.now();
+  jug._admFallos = (jug._admFallos || []).filter((t) => ahora - t < 600000);
+  if (jug._admFallos.length >= 5) {
+    sala.enviar(jug.ws, { t: 'aviso', txt: 'Demasiados intentos: las paredes desconfían de ti un buen rato.' });
+    return false;
+  }
+  if (clave === ADMIN_CLAVE) {
+    jug.esAdmin = true;
+    return true;
+  }
+  jug._admFallos.push(ahora);
+  console.log(`[admin] intento fallido de ${jug.nombre}#${jug.id} (${jug._admFallos.length}/5)`);
+  return false;
+}
+
 function buscarJugador(nombre) {
   const objetivo = nombre.toLowerCase();
   for (const sala2 of salasVivas())
@@ -227,8 +245,7 @@ function comando(jug, sala, linea) {
   const [cmd, ...resto] = linea.trim().split(/\s+/);
   const arg = resto.join(' ');
   if (cmd === '/admin') {
-    if (arg === ADMIN_CLAVE) {
-      jug.esAdmin = true;
+    if (intentarAdmin(jug, sala, arg)) {
       sala.enviar(jug.ws, { t: 'admin', si: true }); // desbloquea la UI de debug
       sala.enviar(jug.ws, { t: 'aviso', txt: 'Las Backrooms te reconocen como su guardián.' });
     } else sala.enviar(jug.ws, { t: 'aviso', txt: 'La clave no abre nada.' });
