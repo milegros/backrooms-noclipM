@@ -271,10 +271,77 @@ que solo tú puedes aceptar o rechazar.
   de que decidas.
 - **Aceptar un PR**: botón verde **Merge pull request** en la web (solo tú lo ves).
   Consejo: nunca aceptes un PR sin que Claude lo haya revisado antes.
+- **Inspeccionar un PR tú mismo** (no hace falta ningún programa, todo en el navegador):
+  - Pestaña **Conversation** del PR: la explicación del autor y los comentarios. Si el PR
+    trae sonidos o vídeos de muestra, se reproducen ahí mismo con el play.
+  - Pestaña **Files changed**: todos los archivos que toca, con los cambios en colores —
+    **rojo = línea que se quita, verde = línea que entra**. Los archivos de audio/imagen
+    salen como «Binary file» (GitHub no puede mostrarlos como texto).
+  - Pasa el ratón por una línea y aparece un **+** azul: deja un comentario al autor ahí
+    mismo para pedir cambios antes de aceptar.
+  - Para rechazar: botón **Close pull request**, mejor con un comentario amable del porqué.
+- **El doble check automático (CI, desde 2026-07-06)**: cada PR (y cada push) ejecuta solo
+  una batería de comprobaciones en GitHub — sintaxis de todo el código, tests del parser,
+  auditoría del Level 0 y que nadie haya editado a mano los archivos generados. El
+  resultado sale EN el propio PR: **✓ verde = pasó lo objetivo** (aún hay que revisar
+  diseño e intenciones con Claude), **✗ rojo = ni te molestes** (el autor puede ver qué
+  falló pulsando «Details» y arreglarlo). Vive en `.github/workflows/ci.yml`.
 - **Issues**: la pestaña «Issues» es el buzón de bugs y sugerencias de la comunidad —
   puedes enseñarla en directo y pedirle a Claude que arregle los que te convenzan.
+- **Noticias automáticas en Discord** (ya configurado, 2026-07-06): cada push a `main`,
+  PR, issue y release aparece solo en el canal de Discord. Cómo se montó, por si hay que
+  repetirlo: en Discord → rueda del canal → Integraciones → Webhooks → Nuevo webhook →
+  Copiar URL; y esa URL (añadiéndole `/github` al final) se registra en GitHub →
+  Settings → Webhooks (o se le pega a Claude y lo hace con `gh`). ⚠ La URL del webhook
+  es SECRETA (quien la tenga puede escribir en tu canal): no la enseñes en directo ni la
+  subas al repositorio. Si se filtra: bórrala en Discord, crea otra y reconfigura.
 
-## 12. Si algo falla
+## 12. BACKROOMS MMO: tu servidor (v21)
+
+El juego ahora es un mundo compartido: necesita un servidor encendido.
+
+**Jugar en local (probar en tu PC):** abre una terminal en la carpeta del proyecto y:
+```
+node server/server.js
+```
+Juega en `http://localhost:8080` (dos ventanas = dos jugadores; la de incógnito cuenta
+como otra persona). `Ctrl+C` lo para. La clave de admin sale en la terminal al arrancar.
+Gente de tu misma WiFi puede entrar con `http://TU-IP-LOCAL:8080` (IP con `ipconfig`).
+
+**Para que juegue cualquiera por internet**, hace falta un servidor de verdad — el
+tutorial completo está en `deploy/README.md`. Tu única parte manual es contratar dos cosas:
+
+**A. Contratar (una vez, ~5 €/mes):**
+1. **VPS**: un servidor pequeño con Ubuntu 24.04 (p. ej. Hetzner CX22, DigitalOcean,
+   OVH…). Al crearlo te dan una **dirección IP** y acceso root por SSH.
+2. **Dominio** (p. ej. en Namecheap/Porkbun): crea un registro **A** apuntando a esa IP
+   (en la gestión DNS del dominio: tipo A, nombre @, valor = la IP del VPS).
+
+**B. Instalar (una vez, 5 minutos):** entra al VPS por SSH (o pídeselo a Claude con
+la IP) y ejecuta:
+```
+curl -fsSL https://raw.githubusercontent.com/AgenteMaxo/backrooms-noclip/v21-mmo/deploy/instalar.sh -o instalar.sh
+MMO_DOMINIO=tudominio.com bash instalar.sh
+```
+Al terminar, `https://tudominio.com` es el juego, con candado HTTPS automático.
+El servidor arranca solo al encender y se reinicia si se cae.
+
+**C. Ser el guardián (en el chat del juego):**
+- `/admin tu-clave` — te da poderes (la clave se fija en el archivo del servicio,
+  el instalador te dice dónde; NO la digas en directo).
+- `/anuncio texto` — banner para TODOS los jugadores de todas las salas.
+- `/kick nombre` · `/mute nombre 10` (minutos) · `/ban nombre` (permanente).
+- `/tp 14` (o `/tp level-483`) — teletransporte de guardián a cualquier nivel:
+  tu menú de debug para enseñar niveles en directo.
+
+**D. Mantenimiento:**
+- Actualizar a la última versión: `bash /opt/backrooms-mmo/deploy/desplegar.sh`
+- Ver el mundo en vivo: `https://tudominio.com/estado` (jugadores, salas, rendimiento).
+- Ver los registros: `journalctl -u backrooms-mmo -f`
+- Probado con **500 jugadores simultáneos** en un equipo modesto (130-190 MB de RAM):
+  un VPS básico va sobrado.
+
+## 13. Si algo falla
 
 - Pulsa **F12** en el navegador → pestaña «Consola» → haz captura de los mensajes en rojo
   y enséñasela a Claude.

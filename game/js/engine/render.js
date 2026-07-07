@@ -254,6 +254,24 @@
     const col = ex.def.tipo === 'escape' ? '#6ae86a' : ex.def.tipo === 'sellada' ? '#666666' : '#e8c95a';
     if (ex.def.ritual) { drawRitual(ex, x, y, t, col, pulse); return; }
 
+    // Suelo falso todavía cerrado: grietas sobre la moqueta, no un agujero ya abierto.
+    if (ex.def._mec === 'romper_suelo' && !ex.def._abierta) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(28,20,10,0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 7, y + 25); ctx.lineTo(x + 18, y + 20); ctx.lineTo(x + 24, y + 27);
+      ctx.lineTo(x + 33, y + 15); ctx.lineTo(x + 41, y + 20);
+      ctx.moveTo(x + 24, y + 27); ctx.lineTo(x + 29, y + 37);
+      ctx.moveTo(x + 18, y + 20); ctx.lineTo(x + 15, y + 11);
+      ctx.stroke();
+      ctx.globalAlpha = 0.18 + pulse * 0.12;
+      ctx.fillStyle = '#fff1b0';
+      ctx.beginPath(); ctx.arc(cx, y + 25, 13, 0, 7); ctx.fill();
+      ctx.restore();
+      return;
+    }
+
     // pared AGRIETADA (v20): la salida hay que romperla; abierta = hueco de luz
     if (ex.def._mec === 'romper') {
       ctx.save();
@@ -631,7 +649,7 @@
               ay += (world.player.y - e.y) * amp * TILE;
             }
           }
-          const lit = world.light[e.y * g.w + e.x];
+          const lit = world.light[Math.round(e.y) * g.w + Math.round(e.x)];
           ctx.save();
           ctx.fillStyle = 'rgba(0,0,0,0.3)';
           ctx.beginPath(); ctx.ellipse(ax + 24, ay + 40, 11, 4, 0, 0, 7); ctx.fill();
@@ -688,6 +706,26 @@
       ctx.fillRect(0, 0, W, H);
     }
 
+    // jugadores remotos del MMO (cuerpo + capa social); en 2D van por encima
+    // del mapa — suficiente para el render de respaldo
+    if (window.Otros && world.otros) {
+      for (const o of world.otros) {
+        if (o.escondido) continue;
+        const ox = o.rx * TILE - cam.x, oy = o.ry * TILE - cam.y;
+        if (ox < -TILE || oy < -TILE || ox > W + TILE || oy > H + TILE) continue;
+        const d4 = Otros.dir4(o.rot);
+        const dir = d4 === 0 ? 'up' : d4 === 2 ? 'down' : 'side';
+        const sid = 'player_' + dir;
+        const anda = Math.abs(o.rx - o.x) + Math.abs(o.ry - o.y) > 0.03;
+        const img = Sprites.get(sid, anda ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0);
+        ctx.save();
+        ctx.translate(ox + 24, oy + 20);
+        if (d4 === 3) ctx.scale(-1, 1);
+        ctx.drawImage(img, -24, -24);
+        ctx.restore();
+      }
+      Otros.overlay(ctx, (wx, wy) => [wx * TILE - cam.x + TILE / 2, wy * TILE - cam.y + TILE / 2], world, t);
+    }
     if (!window.NOFX) Effects.draw(ctx, cam.x, cam.y, t, TILE);
     ctx.restore(); // fin de la sacudida
 

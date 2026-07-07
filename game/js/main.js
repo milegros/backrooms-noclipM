@@ -53,25 +53,24 @@
   }
 
   // ---------- opciones persistentes (v16) ----------
-  const defaultGamepadMap = {
-    interact: 0, wait: 2, light: 3, handL: 4, handR: 5, backpack: 8, menu: 9
-  };
-  window.OPTS = { dado: true, cursorSpeed: 8, gamepadMap: Object.assign({}, defaultGamepadMap) };
-  try { 
-    const saved = JSON.parse(localStorage.getItem('backrooms-opts')) || {};
-    Object.assign(window.OPTS, saved);
-    if (!OPTS.gamepadMap) OPTS.gamepadMap = Object.assign({}, defaultGamepadMap);
-  } catch (e) { /* opciones corruptas: valores por defecto */ }
-  
-  function guardarOpciones() {
-    try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
-  }
-
+  window.OPTS = {
+  gamepadMap: {
+    interact: 0,
+    wait: 2,
+    light: 3,
+    handL: 4,
+    handR: 5,
+    backpack: 1,
+    menu: 9
+  },
+  cursorSpeed: 8, dado: true };
+  try { Object.assign(window.OPTS, JSON.parse(localStorage.getItem('backrooms-opts')) || {}); }
+  catch (e) { /* opciones corruptas: valores por defecto */ }
   const optDado = document.getElementById('opt-dado');
   optDado.checked = OPTS.dado;
   optDado.onchange = () => {
     OPTS.dado = optDado.checked;
-    guardarOpciones();
+    try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
   };
 
   // ---------- menú de ajustes de sonido ----------
@@ -155,9 +154,7 @@
   }
   const btnBpClose = document.getElementById('btn-backpack-close');
   if (btnBpClose) btnBpClose.onclick = () => world.ui.toggleBackpack(false);
-  const btnSndTitle = document.getElementById('btn-sound-menu-title');
-  if (btnSndTitle) btnSndTitle.onclick = abrirSndMenu;
-
+  
   // ---------- ajustes de mando ----------
   const btnGamepadSettings = document.getElementById('btn-gamepad-settings');
   const gamepadMenu = document.getElementById('gamepad-menu');
@@ -197,17 +194,15 @@
   const btnGamepadDefault = document.getElementById('btn-gamepad-default');
   if (btnGamepadDefault) {
     btnGamepadDefault.onclick = () => {
-      if (confirm('¿Restablecer controles por defecto?')) {
-        OPTS.gamepadMap = Object.assign({}, defaultGamepadMap);
-        OPTS.cursorSpeed = 8;
-        optCursorSpeed.value = 8;
-        optCursorSpeedV.textContent = 8;
-        guardarOpciones();
-        renderGamepadList();
-      }
+      OPTS.gamepadMap = { interact: 0, wait: 2, light: 3, handL: 4, handR: 5, backpack: 1, menu: 9 };
+      OPTS.cursorSpeed = 8;
+      optCursorSpeed.value = 8;
+      optCursorSpeedV.textContent = 8;
+      guardarOpciones();
+      renderGamepadList();
     };
   }
-  
+
   function renderGamepadList() {
     if (!gamepadList) return;
     gamepadList.innerHTML = '';
@@ -250,17 +245,86 @@
     }
   }
 
+  function isUIOpen() {
+    if (document.getElementById('backpack-panel')?.style.display !== 'none') return true;
+    if (document.getElementById('codex-panel')?.style.display !== 'none') return true;
+    if (document.getElementById('journal-panel')?.style.display !== 'none') return true;
+    if (document.getElementById('sound-menu')?.style.display !== 'none') return true;
+    if (document.getElementById('gamepad-menu')?.style.display !== 'none') return true;
+    return false;
+  }
+  const btnSndTitle = document.getElementById('btn-sound-menu-title');
+  if (btnSndTitle) btnSndTitle.onclick = abrirSndMenu;
+
+  // v22: conjunto de teclas de movimiento PULSADAS (keydown/keyup); el vector
+  // de input se calcula en cada frame del bucle — movimiento libre y suave
+  const teclas = new Set();
+  document.addEventListener('keyup', (ev) => teclas.delete(ev.code));
+  window.addEventListener('blur', () => {
+    teclas.clear();
+    if (world.online && window.Net) Net.setInput(0, 0);
+  });
+
   let lastStepT = 0; // mantener pulsado = velocidad CONSTANTE (v16)
   document.addEventListener('keydown', (ev) => {
     if (!world.level || world.over) return;
     if (document.getElementById('screen-card').style.display !== 'none') return;
+    // escribiendo en el chat del MMO: el juego no oye nada
+    if (window.Net && Net.chatAbierto && Net.chatAbierto()) return;
     const tercera = use3D && Render3D.modo === 'tercera';
+    // ---------- modo online (BACKROOMS MMO v22): movimiento LIBRE ----------
+    // las teclas de movimiento solo se apuntan; el vector se calcula por frame
+    if (world.online) {
+      if (KEYS[ev.code]) {
+        ev.preventDefault();
+        teclas.add(ev.code);
+      } else if (ev.code === 'KeyT' || ev.code === 'Enter') {
+        ev.preventDefault();
+        Net.abrirChat();
+      } else if (ev.code === 'Space') {
+        ev.preventDefault();
+        Net.accion(); // contextual: esconderse, romper, reabrir la oferta de salida
+      } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
+        if (tercera || !use3D) Net.usar(ev.code === 'KeyQ' ? 0 : 1);
+        else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
+      } else if (ev.code === 'KeyF') Net.luzToggle();
+      else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
+      else if (ev.code === 'KeyB') world.ui.toggleBackpack();
+      else if (ev.code === 'KeyL') world.ui.toggleLog();
+      else if (ev.code === 'KeyC') world.ui.toggleCodex();
+      else if (ev.code === 'KeyM' || ev.code === 'KeyN') Minimap.toggleBig();
+      else if (ev.code === 'Escape') {
+        if (Minimap.visible) Minimap.toggleBig(false);
+        else if (document.getElementById('backpack-panel').style.display !== 'none') world.ui.toggleBackpack(false);
+        else if (sndMenu.style.display !== 'none') cerrarSndMenu();
+        else abrirSndMenu();
+      }
+      // (X=esperar no aplica online: el mundo ya no espera por nadie)
+      return;
+    }
+    const autoRepeatTime2DMove = 150; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento en modo 2D
+    const autoRepeatTime3DYMove = 150; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento vertical en modo 3D
+    const autoRepeatTime3DXMove = 600; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento horizontal en modo 3D
     if (KEYS[ev.code]) {
       ev.preventDefault();
-      // el auto-repeat del teclado dispara ráfagas: se limita a un paso cada 150 ms
-      if (ev.repeat && performance.now() - lastStepT < 150) return;
-      lastStepT = performance.now();
       const [sdx, sdy] = KEYS[ev.code]; // dirección de PANTALLA pulsada
+      // el auto-repeat del teclado dispara ráfagas: 
+      if (tercera) {
+        if (
+          ev.repeat &&
+          (
+            (performance.now() - lastStepT < autoRepeatTime3DXMove && sdx !== 0) ||
+            (performance.now() - lastStepT < autoRepeatTime3DYMove && sdy !== 0)
+          )
+        ) {
+          return;
+        }
+      } else {
+        if (ev.repeat && performance.now() - lastStepT < autoRepeatTime2DMove) {
+          return;
+        }
+      }
+      lastStepT = performance.now();
       if (tercera) {
         // 3ª persona: W avanza, S retrocede, A/D giran al personaje (gratis)
         if (sdy === -1) Game.avanzar(1);
@@ -301,23 +365,13 @@
     } else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
   });
 
-  // ---------- Gamepad (v21) ----------
-  const lastGamepadState = [];
-  let lastGamepadStepT = 0;
-  let lastUINavT = 0;
+  // ---------- bucle de animación (y, online, también el input continuo) ----------
+  function lerp(a, b, f) { return a + (b - a) * f; }
 
-  function isUIOpen() {
-    if (document.getElementById('screen-card')?.style.display !== 'none') return true;
-    if (document.getElementById('exit-modal')?.style.display !== 'none') return true;
-    if (document.getElementById('choice-modal')?.style.display !== 'none') return true;
-    if (document.getElementById('instinto-modal')?.style.display !== 'none') return true;
-    if (document.getElementById('backpack-panel')?.style.display !== 'none') return true;
-    if (document.getElementById('codex-panel')?.style.display !== 'none') return true;
-    if (document.getElementById('journal-panel')?.style.display !== 'none') return true;
-    if (document.getElementById('sound-menu')?.style.display !== 'none') return true;
-    return false;
-  }
+  const GIRO_RAD_S = 3.1; // velocidad de giro manteniendo A/D en tercera persona
+  let lastFrameT = 0;
 
+  
   let vCursor = null;
   let cursorX = window.innerWidth / 2;
   let cursorY = window.innerHeight / 2;
@@ -336,7 +390,15 @@
   document.addEventListener('mousedown', hideGamepadCursor);
   document.addEventListener('wheel', hideGamepadCursor);
 
+  window.gamepadDx = 0;
+  window.gamepadDy = 0;
+  let lastGamepadStepT = 0;
+  const lastGamepadState = {};
+
   function pollGamepad(t) {
+    window.gamepadDx = 0;
+    window.gamepadDy = 0;
+
     if (!navigator.getGamepads) return;
     const gamepads = navigator.getGamepads();
     const gp = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
@@ -369,10 +431,15 @@
     if (pressed(12) || gp.axes[1] < -0.4) dy = -1;
     if (pressed(13) || gp.axes[1] > 0.4) dy = 1;
 
-    // Analog stick fine-grained movement for virtual cursor
     if (uiOpen) {
       if (Math.abs(gp.axes[0]) > 0.1) dx = gp.axes[0];
       if (Math.abs(gp.axes[1]) > 0.1) dy = gp.axes[1];
+    } else {
+      // In game mode, use analog precision for movement vector (if supported)
+      if (Math.abs(gp.axes[0]) > 0.1) dx = gp.axes[0];
+      if (Math.abs(gp.axes[1]) > 0.1) dy = gp.axes[1];
+      window.gamepadDx = dx;
+      window.gamepadDy = dy;
     }
 
     let anyInput = false;
@@ -470,38 +537,59 @@
         return;
       }
 
-      if (dx !== 0 || dy !== 0) {
-        if (t - lastGamepadStepT >= 150) {
-          lastGamepadStepT = t;
-          const tercera = use3D && window.Render3D && Render3D.modo === 'tercera';
-          if (tercera) {
-            if (dy === -1) Game.avanzar(1);
-            else if (dy === 1) Game.avanzar(-1);
-            else Game.girar(dx);
-          } else {
-            let ndx = dx > 0 ? 1 : (dx < 0 ? -1 : 0);
-            let ndy = dy > 0 ? 1 : (dy < 0 ? -1 : 0);
-            if (use3D && window.Render3D && Render3D.rot) {
-              const th = -Render3D.rot * Math.PI / 2;
-              const rx = Math.round(Math.cos(th) * ndx - Math.sin(th) * ndy);
-              const ry = Math.round(Math.sin(th) * ndx + Math.cos(th) * ndy);
-              ndx = rx; ndy = ry;
+      const third = use3D && window.Render3D && Render3D.modo === 'tercera';
+
+      if (!world.online) {
+        // Offline step movement
+        if (dx !== 0 || dy !== 0) {
+          if (t - lastGamepadStepT >= 150) {
+            lastGamepadStepT = t;
+            if (third) {
+              if (dy < -0.5) Game.avanzar(1);
+              else if (dy > 0.5) Game.avanzar(-1);
+              else Game.girar(dx > 0 ? 1 : (dx < 0 ? -1 : 0));
+            } else {
+              let ndx = dx > 0.5 ? 1 : (dx < -0.5 ? -1 : 0);
+              let ndy = dy > 0.5 ? 1 : (dy < -0.5 ? -1 : 0);
+              if (use3D && window.Render3D && Render3D.rot) {
+                const th = -Render3D.rot * Math.PI / 2;
+                const rx = Math.round(Math.cos(th) * ndx - Math.sin(th) * ndy);
+                const ry = Math.round(Math.sin(th) * ndx + Math.cos(th) * ndy);
+                ndx = rx; ndy = ry;
+              }
+              Game.tryMove(ndx, ndy);
             }
-            Game.tryMove(ndx, ndy);
           }
         }
       }
 
-      if (justPressed(OPTS.gamepadMap.interact)) Game.interact();
-      if (justPressed(OPTS.gamepadMap.wait)) Game.wait();
-      if (justPressed(OPTS.gamepadMap.light)) Game.toggleLuz();
+      // Actions
+      if (justPressed(OPTS.gamepadMap.interact)) {
+        if (world.online && window.Net) Net.accion();
+        else Game.interact();
+      }
+      if (justPressed(OPTS.gamepadMap.wait)) {
+        if (!world.online) Game.wait();
+      }
+      if (justPressed(OPTS.gamepadMap.light)) {
+        if (world.online && window.Net) Net.luzToggle();
+        else Game.toggleLuz();
+      }
       if (justPressed(OPTS.gamepadMap.handL)) {
-        if (use3D && window.Render3D && Render3D.modo !== 'tercera') Render3D.rotar(1);
-        else Game.usarMano(0);
+        if (third || !use3D) {
+          if (world.online && window.Net) Net.usar(0);
+          else Game.usarMano(0);
+        } else {
+          Render3D.rotar(1);
+        }
       }
       if (justPressed(OPTS.gamepadMap.handR)) {
-        if (use3D && window.Render3D && Render3D.modo !== 'tercera') Render3D.rotar(-1);
-        else Game.usarMano(1);
+        if (third || !use3D) {
+          if (world.online && window.Net) Net.usar(1);
+          else Game.usarMano(1);
+        } else {
+          Render3D.rotar(-1);
+        }
       }
       if (justPressed(OPTS.gamepadMap.backpack)) world.ui.toggleBackpack();
       if (justPressed(OPTS.gamepadMap.menu)) document.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' }));
@@ -509,18 +597,55 @@
 
     for(let i=0; i<btns.length; i++) lastGamepadState[i] = pressed(i);
   }
-
-  // ---------- bucle de animación (solo visual; la lógica es por turnos) ----------
-  function lerp(a, b, f) { return a + (b - a) * f; }
-
   function loop(t) {
     pollGamepad(t);
     requestAnimationFrame(loop);
+    const dtF = Math.min(0.1, (t - lastFrameT) / 1000 || 0);
+    lastFrameT = t;
     if (!world.level || !world.player) return;
     const p = world.player;
+
+    // ---------- v22: vector de movimiento por frame (movimiento libre) ----------
+    if (world.online && window.Net && Net.activo &&
+        !(Net.chatAbierto && Net.chatAbierto()) &&
+        document.getElementById('screen-card').style.display === 'none') {
+      // suma de las teclas pulsadas en coordenadas de PANTALLA
+      let sx = window.gamepadDx || 0, sy = window.gamepadDy || 0;
+      for (const code of teclas) {
+        const v = KEYS[code];
+        if (v) { sx += v[0]; sy += v[1]; }
+      }
+      sx = Math.sign(sx); sy = Math.sign(sy);
+      const tercera = use3D && Render3D.modo === 'tercera';
+      if (tercera) {
+        // A/D giran suave; W/S avanzan según el ángulo θ
+        if (sx) Net.setRot((p.rot || 0) + sx * GIRO_RAD_S * dtF);
+        const s = -sy; // W (pantalla arriba) = avanzar
+        if (s) Net.setInput(Math.sin(p.rot || 0) * s, -Math.cos(p.rot || 0) * s);
+        else Net.setInput(0, 0);
+      } else {
+        // 2D / cámara alta: 8 direcciones relativas a la pantalla
+        let dx = sx, dy = sy;
+        if (use3D && Render3D.rot) {
+          const th = -Render3D.rot * Math.PI / 2;
+          const rx2 = Math.cos(th) * sx - Math.sin(th) * sy;
+          const ry2 = Math.sin(th) * sx + Math.cos(th) * sy;
+          dx = rx2; dy = ry2;
+        }
+        Net.setInput(dx, dy);
+        if (dx || dy) {
+          // el facing sigue al movimiento (sprite 2D + acciones por ángulo)
+          if (Math.abs(dy) >= Math.abs(dx)) p.dir = dy > 0 ? 'down' : 'up';
+          else { p.dir = 'side'; p.flip = dx < 0; }
+          Net.setRot(Math.atan2(dx, -dy));
+        }
+      }
+      Net.frame(dtF); // predicción local con la misma física del servidor
+    }
+
     // desliza la posición visual hacia la lógica
-    p.rx = lerp(p.rx, p.x, 0.28);
-    p.ry = lerp(p.ry, p.y, 0.28);
+    p.rx = lerp(p.rx, p.x, world.online ? 0.5 : 0.28);
+    p.ry = lerp(p.ry, p.y, world.online ? 0.5 : 0.28);
     world.moving = Math.abs(p.rx - p.x) + Math.abs(p.ry - p.y) > 0.02;
     for (const e of world.entities) {
       if (e.rx === undefined) { e.rx = e.x; e.ry = e.y; }
@@ -562,13 +687,23 @@
   const params = new URLSearchParams(location.search);
   if (params.get('nofx')) window.NOFX = true;
   if (params.get('debug3d')) window.DEBUG3D_ON = true;
-  if ((params.get('autostart') || params.get('selftest')) && !Game.Profiles.activeName())
-    Game.Profiles.create('Errante');
-  if (params.get('autostart')) {
+  if ((params.get('autostart') || params.get('selftest') || params.get('online')) && !Game.Profiles.activeName())
+    Game.Profiles.create(params.get('nombre') || 'Errante');
+  // ---------- BACKROOMS MMO: ?online=1 conecta al mundo compartido ----------
+  if (params.get('online')) {
+    Net.iniciar(params.get('nombre') || Game.Profiles.activeName() || 'Errante');
+    // la tarjeta del nivel aparece al recibir la bienvenida; se entra sola
+    const esperaCard = setInterval(() => {
+      const btn = document.getElementById('btn-enter');
+      if (Net.activo && btn && document.getElementById('screen-card').style.display !== 'none') {
+        clearInterval(esperaCard);
+        btn.click();
+      }
+    }, 100);
+  } else if (params.get('autostart')) {
     Game.startRun(params.get('seed') || undefined);
     if (params.get('nivel') && world.data.levels[params.get('nivel')]) {
       // salto directo para pruebas
-      const btn = document.getElementById('btn-enter');
       Game.world.prevStack.push('level-0');
       const id = params.get('nivel');
       setTimeout(() => {
@@ -607,6 +742,7 @@
     }
     setTimeout(() => document.getElementById('btn-enter')?.click(), 30);
     let acciones = 0;
+    let marchaCache = null;
     const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
     const iv = setInterval(() => {
       try {
@@ -624,6 +760,10 @@
             nivel: world.level?.id,
             visitados: world.visited,
             turnoTotal: world.turnTotal,
+            pasosNivel: world.pasosNivel,
+            objetivoCaminata: world._caminataObjetivo,
+            posicion: [world.player?.x, world.player?.y],
+            mapa: world.map ? [world.map.grid.w, world.map.grid.h] : null,
             salud: world.player?.salud,
             cordura: world.player?.cordura,
             inv: world.player?.inv,
@@ -667,10 +807,52 @@
           return;
         }
         if (world.busy) return; // dado en marcha
-        // marcha forzada hacia el este serpenteando (prueba de niveles infinitos)
+        // Prueba dirigida de una expansión: coloca al jugador en la banda este
+        // y avanza un turno. Solo se activa explícitamente con ?shift=1.
+        if (params.get('shift') && !window.__shiftForzado) {
+          const g = world.map.grid;
+          let pos = null;
+          for (let x = g.w - 2; x >= g.w - 20 && !pos; x--)
+            for (let y = 1; y < g.h - 1; y++)
+              if (MapGen.walkable(MapGen.at(g, x, y))) { pos = [x, y]; break; }
+          if (pos) {
+            world.player.x = world.player.rx = pos[0];
+            world.player.y = world.player.ry = pos[1];
+            window.__shiftForzado = true;
+            Game.wait();
+            acciones++;
+            return;
+          }
+        }
+        // Marcha dirigida hacia el extremo este: fuerza cambios de ventana en
+        // niveles infinitos sin desperdiciar cientos de intentos contra muros.
         if (params.get('marcha')) {
-          const r = Math.random();
-          Game.tryMove(r < 0.5 ? 1 : 0, r < 0.5 ? 0 : (r < 0.75 ? -1 : 1));
+          const g = world.map.grid;
+          const version = `${world.ventanaN || 0}:${world.mapaVersion || 0}`;
+          if (!marchaCache || marchaCache.version !== version) {
+            marchaCache = null;
+            buscar: for (let tx = g.w - 2; tx >= 1; tx--)
+              for (let ty = 1; ty < g.h - 1; ty++) {
+                if (!MapGen.walkable(MapGen.at(g, tx, ty))) continue;
+                const dist = MapGen.bfsDist(g, tx, ty);
+                if (dist[world.player.y * g.w + world.player.x] >= 0) {
+                  marchaCache = { version, dist };
+                  break buscar;
+                }
+              }
+          }
+          let paso = null;
+          if (marchaCache) {
+            const actual = marchaCache.dist[world.player.y * g.w + world.player.x];
+            for (const [dx, dy] of dirs) {
+              const nx = world.player.x + dx, ny = world.player.y + dy;
+              if (nx < 0 || ny < 0 || nx >= g.w || ny >= g.h) continue;
+              const v = marchaCache.dist[ny * g.w + nx];
+              if (v >= 0 && v < actual) { paso = [dx, dy]; break; }
+            }
+          }
+          if (paso) Game.tryMove(paso[0], paso[1]);
+          else { marchaCache = null; Game.tryMove(1, 0); }
           acciones++;
           return;
         }
@@ -781,12 +963,22 @@
   $id('btn-start').onclick = () => {
     if (!P.activeName()) P.create($id('profile-name').value.trim() || 'Errante');
     refreshTitle();
-    const seed = $id('seed-input').value.trim();
-    Game.startRun(seed || undefined);
+    // BACKROOMS MMO: el botón del título conecta al mundo compartido
+    const btn = $id('btn-start');
+    btn.disabled = true;
+    btn.textContent = 'CRUZANDO LA REALIDAD…';
+    Net.iniciar(P.activeName());
+    const espera = setInterval(() => {
+      if (Net.activo) {
+        clearInterval(espera);
+        btn.disabled = false;
+        btn.textContent = 'DESPERTAR EN LEVEL 0';
+      }
+    }, 200);
   };
   $id('btn-again').onclick = () => {
     refreshTitle();
-    Game.startRun();
+    world.ui.show('title');
   };
   $id('btn-journal-close').onclick = () => world.ui.toggleJournal();
   $id('btn-end-codex').onclick = () => world.ui.toggleCodex(true);
