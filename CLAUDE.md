@@ -238,7 +238,15 @@ exponencial ~6/s (jamás un salto a 10 Hz); umbral 0.4 en movimiento / 0.15 para
 (convergencia). Estáticos html/js/css con `Cache-Control: no-cache` (un cliente cacheado
 con código viejo jugaba con bugs ya arreglados — protocolo v4 expulsó a los de v23);
 `?netdebug=1` loguea derivas y rtt en consola. Simulador de los algoritmos con
-giros/frenadas/tick: corrMaxFrame 0.137 (v23.1) → 0.017 (v23.2). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
+giros/frenadas/tick: corrMaxFrame 0.137 (v23.1) → 0.017 (v23.2). **v23.3**: producción va
+tras CLOUDFLARE (tunnel) y su edge cachea `.js/.css` POR DEFECTO ignorando Ctrl+F5 del
+usuario → tras subir protocolo a v4 los clientes recibían JS viejo del edge y el título se
+quedaba mudo en «CRUZANDO LA REALIDAD…». Fix triple: (1) TODAS las URLs de script/css en
+index.html llevan `?v=NNN` — SUBIRLO en cada versión junto con `VERSION_JUEGO` (el HTML no
+se cachea → HTML nuevo = URLs nuevas = edge bypass); (2) `#title-net` muestra
+`Net.ultimoError` o timeout de 10 s en el título (nunca más un botón colgado sin motivo);
+(3) cierre con reason 'version' → `autoActualizar()` (fetch cache:'reload' de todos los
+scripts + location.reload, guarda anti-bucle en sessionStorage, se limpia en bienvenida). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
 destino una salida con `destino === origen` y te hace spawn PEGADO a ella, o crea
 `jug.retorno` — puerta PERSONAL (índice `'R'` en `salidaCerca`/`ofrecer`; el cliente la
 añade a `map.exits` solo en su lado vía `m.retorno`); sin retorno si `esSinRetorno`

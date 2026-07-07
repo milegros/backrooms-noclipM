@@ -20,6 +20,21 @@
   let pingTimer = null;
   const historia = [];     // [{t, x, y}] de la predicción local (~1.2 s)
   const corr = { x: 0, y: 0 }; // corrección pendiente: se aplica REPARTIDA por frames
+  let ultimoError = null;      // último rechazo del servidor (lo muestra el título)
+
+  // fuerza la recarga real de los scripts (sin caché) y reinicia la página.
+  // Guarda de sesión: si tras recargar seguimos con versión vieja, no ciclar.
+  function autoActualizar() {
+    try {
+      if (sessionStorage.getItem('mmo-actualizando')) return false;
+      sessionStorage.setItem('mmo-actualizando', '1');
+    } catch (e) { return false; }
+    const urls = [...document.querySelectorAll('script[src], link[rel=stylesheet]')]
+      .map((el) => el.src || el.href).filter(Boolean);
+    Promise.allSettled(urls.map((u) => fetch(u, { cache: 'reload' })))
+      .then(() => location.reload());
+    return true;
+  }
 
   function urlServidor() {
     const params = new URLSearchParams(location.search);
@@ -58,14 +73,21 @@
       try { m = JSON.parse(ev.data); } catch (e) { return; }
       recibir(m, w);
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       listo = false;
       clearInterval(pingTimer);
+      // rechazo por VERSIÓN: el navegador (o el edge de Cloudflare) sirvió
+      // código viejo — refrescar los scripts y recargar, una sola vez
+      if (ev && ev.reason === 'version') {
+        if (autoActualizar()) return;
+        ultimoError = 'El juego se actualizó y tu navegador cargó una versión vieja. Pulsa Ctrl+F5.';
+        return; // reintentar con el mismo código viejo no lleva a nada
+      }
       if (w.level) w.log('Conexión perdida con las Backrooms… reintentando.', 'danger');
       clearTimeout(reintento);
       reintento = setTimeout(() => iniciar(nombre), 3000);
     };
-    ws.onerror = () => {};
+    ws.onerror = () => { ultimoError = ultimoError || 'No se pudo conectar con el servidor.'; };
     // medición de RTT: alimenta la reconciliación y el retardo de interpolación
     clearInterval(pingTimer);
     pingTimer = setInterval(() => enviar({ t: 'ping', ts: Math.round(performance.now()) }), 4000);
@@ -92,6 +114,8 @@
     switch (m.t) {
       case 'bienvenida':
         miId = m.id;
+        ultimoError = null;
+        try { sessionStorage.removeItem('mmo-actualizando'); } catch (e) {}
         // reconexión = sesión nueva: la condición de guardián hay que revalidarla
         if (w.esAdmin) { w.esAdmin = false; if (window.onAdminCambia) window.onAdminCambia(false); }
         Game.startRun(m.semilla); // jugador, HUD y tarjeta de presentación
@@ -329,7 +353,10 @@
       }
 
       case 'aviso': w.log(m.txt, 'event'); break;
-      case 'error': w.log(m.txt, 'danger'); break;
+      case 'error':
+        ultimoError = m.txt; // visible en el título si aún no hay partida
+        w.log(m.txt, 'danger');
+        break;
     }
   }
 
@@ -559,5 +586,6 @@
     get activo() { return listo; },
     get id() { return miId; },
     get rtt() { return rtt; },
+    get ultimoError() { return ultimoError; },
   };
 })();

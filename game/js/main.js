@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v23.2';
+  window.VERSION_JUEGO = 'v23.3';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -684,14 +684,26 @@
     refreshTitle();
     // BACKROOMS MMO: el botón del título conecta al mundo compartido
     const btn = $id('btn-start');
+    const errNet = $id('title-net');
     btn.disabled = true;
     btn.textContent = 'CRUZANDO LA REALIDAD…';
+    errNet.style.display = 'none';
     Net.iniciar(P.activeName());
+    const t0 = Date.now();
     const espera = setInterval(() => {
       if (Net.activo) {
         clearInterval(espera);
         btn.disabled = false;
         btn.textContent = 'DESPERTAR EN LEVEL 0';
+        errNet.style.display = 'none';
+      } else if (Net.ultimoError || Date.now() - t0 > 10000) {
+        // conexión rechazada o muerta: que el streamer VEA el porqué
+        clearInterval(espera);
+        btn.disabled = false;
+        btn.textContent = 'DESPERTAR EN LEVEL 0';
+        errNet.textContent = Net.ultimoError ||
+          'No se pudo conectar con las Backrooms. ¿El servidor está despierto?';
+        errNet.style.display = 'block';
       }
     }, 200);
   };
