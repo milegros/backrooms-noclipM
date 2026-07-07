@@ -473,9 +473,10 @@
       w.player.x = nx; w.player.y = ny;
     }
     // corrección pendiente de la reconciliación, repartida por frames
-    // (exponencial ~6/s): nunca un salto de golpe al ritmo del tick
+    // (exponencial, más rápida cuanto mayor el error): nunca un salto seco
     if (corr.x || corr.y) {
-      const k = Math.min(1, dt * 6);
+      const mag = Math.abs(corr.x) + Math.abs(corr.y);
+      const k = Math.min(1, dt * (6 + Math.min(12, mag * 8)));
       const cx = corr.x * k, cy = corr.y * k;
       if (!Fisica.choca(w.map.grid, w.player.x + cx, w.player.y + cy)) {
         w.player.x += cx; w.player.y += cy;

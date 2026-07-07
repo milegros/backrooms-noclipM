@@ -12,6 +12,7 @@ const db = require('./db');
 
 let siguienteId = 1;
 const ESCONDITES = new Set(['taquilla', 'nevera', 'archivador']);
+const REMODEL_ONLINE = false; // ver nota en tick(): apagada hasta reenviar chunks al entrar
 
 // vector cardinal más cercano a un ángulo θ (0=N, π/2=E, π=S, 3π/2=O)
 function cardinalDe(th) {
@@ -636,8 +637,13 @@ class Sala {
       });
       this._entMovidas = [];
     }
-    // regla no_euclidiana de la ficha: cada 45-90 s el nivel se reorganiza
-    if ((this.def.reglas || []).includes('no_euclidiano')) {
+    // regla no_euclidiana de la ficha: cada 45-90 s el nivel se reorganiza.
+    // DESACTIVADA online (v23.6, decisión del usuario): quien entra a una sala
+    // DESPUÉS de una remodelación reconstruye el mapa desde la semilla SIN los
+    // chunks cambiados → su cliente y el servidor juegan con mapas distintos
+    // (desync brutal, jugadores atravesando paredes). Para reactivarla hay que
+    // guardar los chunks remodelados y reenviarlos en estadoDinamico().
+    if (REMODEL_ONLINE && (this.def.reglas || []).includes('no_euclidiano')) {
       if (!this._remodelEn) this._remodelEn = ahora + 45000 + this.rng.int(0, 45000);
       if (ahora >= this._remodelEn) {
         this._remodelEn = ahora + 45000 + this.rng.int(0, 45000);

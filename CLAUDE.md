@@ -254,7 +254,18 @@ el mismo tramo → velocidad ×2-3 en el servidor → la reconciliación saltaba
 Fix: `desde = max(_ultTick, jug._integradoHasta)` (invariante: Σdt ≤ tiempo real =
 anti-speedhack) + throttle de setInput en cliente (~11/s para deriva fina; arrancar/parar
 inmediato con cambio >0.6). Test de regresión «sin speedhack por spam de input» en
-test-integracion.js (verificado que FALLA sin el fix). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
+test-integracion.js (verificado que FALLA sin el fix). **v23.6** («atravesamos paredes»,
+hipótesis DEL USUARIO confirmada): la remodelación no euclidiana online desincronizaba los
+MAPAS — quien entra a una sala tras una remodelación regenera el mapa desde la semilla SIN
+los chunks cambiados (estadoDinamico no los reenvía) → cliente y servidor con grids
+distintos → física imposible, snaps a través de muros. `REMODEL_ONLINE = false` en sala.js
+(decisión del usuario; el modo solo la conserva) — para REACTIVARLA hay que guardar los
+chunks remodelados en la sala y reenviarlos en estadoDinamico(). Además: la predicción de
+red integra dt REAL (`dtNet` cap 0.6 s en main.js; el clamp visual de 0.1 s hacía que
+cualquier microparón del navegador perdiera camino → snap) y la corrección pendiente
+acelera con el tamaño del error. Banda sonora de The Hub:
+`game/assets/sounds/niveles/the-hub.mp3` (assets/sounds/niveles/<id>.* se carga solo, con
+prioridad sobre la receta `sonido` de la ficha). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
 destino una salida con `destino === origen` y te hace spawn PEGADO a ella, o crea
 `jug.retorno` — puerta PERSONAL (índice `'R'` en `salidaCerca`/`ofrecer`; el cliente la
 añade a `map.exits` solo en su lado vía `m.retorno`); sin retorno si `esSinRetorno`

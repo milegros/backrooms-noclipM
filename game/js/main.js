@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v23.5';
+  window.VERSION_JUEGO = 'v23.6';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -316,7 +316,12 @@
 
   function loop(t) {
     requestAnimationFrame(loop);
-    const dtF = Math.min(0.1, (t - lastFrameT) / 1000 || 0);
+    const dtBruto = (t - lastFrameT) / 1000 || 0;
+    const dtF = Math.min(0.1, dtBruto);
+    // la PREDICCIÓN de red integra el tiempo REAL (los microparones del
+    // navegador no pueden «perder» camino respecto al servidor → snaps);
+    // la física trocea en subpasos, así que un dt grande es seguro
+    const dtNet = Math.min(0.6, dtBruto);
     lastFrameT = t;
     if (!world.level || !world.player) return;
     const p = world.player;
@@ -356,7 +361,7 @@
           Net.setRot(Math.atan2(dx, -dy));
         }
       }
-      Net.frame(dtF); // predicción local con la misma física del servidor
+      Net.frame(dtNet); // predicción local con la misma física del servidor
     }
 
     // desliza la posición visual hacia la lógica
