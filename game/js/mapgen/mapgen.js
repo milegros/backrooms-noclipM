@@ -470,6 +470,7 @@
     const esDeSuelo = (s) => s._mec !== 'romper' &&
       /suelo|caer|agujero|fosa|hoyo|trampilla|pozo|precipicio|fall|escalera|ascensor|elevador/i.test(s.texto || '');
     const puestas = [];
+    const keyCasilla = (p) => p[1] * g.w + p[0];
     const elegir = (pool) => {
       let best = null, bestScore = -1;
       for (const p of pool) {
@@ -488,13 +489,22 @@
       const p = elegir(pool);
       if (p) { puestas.push(p); exits.push({ x: p[0], y: p[1], def: s }); }
     }
+    const ocupadas = new Set(exits.map((e) => e.y * g.w + e.x));
+    const libre = (p) => p && !ocupadas.has(keyCasilla(p));
+    const reservar = (p) => { ocupadas.add(keyCasilla(p)); return p; };
+    const elegirLibre = (pool) => {
+      const libres = pool.filter(libre);
+      return libres.length ? rng.pick(libres) : null;
+    };
 
     // objetos
     const items = [];
     for (const o of levelDef.objetos || []) {
       const n = rng.int(o.n[0], o.n[1]);
       for (let i = 0; i < n; i++) {
-        const p = rng.pick(reach);
+        const p = elegirLibre(reach);
+        if (!p) continue;
+        reservar(p);
         items.push({ x: p[0], y: p[1], id: o.id });
       }
     }
@@ -512,20 +522,21 @@
       invernadero: 'cofre',
     };
     const props = [];
-    const exitKeys = new Set(exits.map((e) => e.y * g.w + e.x));
-    const libre = (p) => !exitKeys.has(p[1] * g.w + p[0]);
     // los muebles "de pared" van físicamente pegados a un muro (pared al norte)
     const PROPS_PARED = new Set(['taquilla', 'archivador', 'nevera', 'reloj', 'camilla', 'farola']);
     const conParedNorte = reach.filter(([x, y]) => at(g, x, y - 1) === T.PARED);
-    const sitioPara = (id) =>
-      PROPS_PARED.has(id) && conParedNorte.length ? rng.pick(conParedNorte) : rng.pick(reach);
+    const sitioPara = (id) => {
+      const pool = PROPS_PARED.has(id) && conParedNorte.length ? conParedNorte : reach;
+      return elegirLibre(pool);
+    };
     const decorativos = PROPS_BIOMA[levelDef.bioma] ?? [];
     if (decorativos.length) {
       const n = rng.int(7, 13);
       for (let i = 0; i < n; i++) {
         const id = rng.pick(decorativos);
         const p = sitioPara(id);
-        if (!libre(p)) continue;
+        if (!p) continue;
+        reservar(p);
         // las cajas de madera SIEMPRE se pueden registrar (v17): nada de
         // decoración que parece un contenedor y frustra al clicarla
         const esCont = id === 'caja';
@@ -536,14 +547,16 @@
     for (let i = 0; i < nCont; i++) {
       const id = CONT_BIOMA[levelDef.bioma] ?? 'cofre';
       const p = sitioPara(id);
-      if (!libre(p)) continue;
+      if (!p) continue;
+      reservar(p);
       props.push({ x: p[0], y: p[1], id, contenedor: true, registrado: false });
     }
     // el reloj es exclusivo de Level 80 — SIEMPRE colgado de una pared
     if (levelDef.id === 'level-80') {
       for (let i = 0; i < 6; i++) {
         const p = sitioPara('reloj');
-        if (!libre(p)) continue;
+        if (!p) continue;
+        reservar(p);
         props.push({ x: p[0], y: p[1], id: 'reloj', contenedor: false });
       }
     }

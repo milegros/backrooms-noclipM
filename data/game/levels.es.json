@@ -1535,7 +1535,20 @@
     ]
    }
   ],
-  "salidas": [],
+  "salidas": [
+   {
+    "texto": "Volver por la ventana abierta por la que entraste, regresando a Level 1",
+    "destino": "level-1",
+    "tipo": "normal"
+   },
+   {
+    "texto": "Atravesar una de las otras ventanas abiertas hacia un destino incierto",
+    "destino": "*aleatoria",
+    "tipo": "arriesgada",
+    "riesgoVoid": 0.05,
+    "prob": 0.6
+   }
+  ],
   "esEscape": false,
   "url": "https://backrooms.fandom.com/wiki/Level_188",
   "estilo": {
