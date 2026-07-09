@@ -181,7 +181,14 @@
     if (window.Sfx && !ambiental) Sfx.play('dano');
     world.ui.updateHUD();
     world.ui.flashDamage();
-    if (world.player.salud <= 0) die(`Has muerto: ${causa} acabó contigo.`);
+    if (world.player.salud <= 0) {
+      if (world._fuenteDano === 'smiler') {
+        world._muerteSmiler = true;
+        if (window.document) document.body.classList.add('smiler-death');
+      }
+      world._fuenteDano = null;
+      die(`Has muerto: ${causa} acabó contigo.`);
+    } else world._fuenteDano = null;
   };
   world.sanity = function (n) {
     if (world.over) return;
@@ -366,6 +373,8 @@
     world.tutorial = {};
     world.turnTotal = 0;
     world.over = false;
+    world._muerteSmiler = false;
+    world._fuenteDano = null;
     // run NUEVA de verdad: si venías de morir, el nivel anterior sigue en
     // world.level y sin esto enterLevel crearía una salida de retorno hacia él
     world.level = null;
@@ -839,6 +848,12 @@
       // no puedes atravesar entidades: con arma, moverte hacia ella = golpearla
       const ent = world.entities.find((e) => e.viva && e.x === nx && e.y === ny);
       if (ent) {
+        if (ent.def?.glyph === 'smiler') {
+          world._muerteSmiler = true;
+          if (window.document) document.body.classList.add('smiler-death');
+          die('Tocaste la sonrisa. El Smiler te arrastró a la oscuridad.');
+          return;
+        }
         // ¿era invisible? chocar con algo en la oscuridad LO REVELA (no más "muros invisibles")
         const idx2 = ny * world.map.grid.w + nx;
         const visible = world.light[idx2] > 0.05 || (ent.reveladaHasta ?? -1) > world.turn;
@@ -1604,6 +1619,8 @@
       ? { inicio: true, interaccion: true, mochila: true }
       : {});
     world.over = false;
+    world._muerteSmiler = false;
+    world._fuenteDano = null;
     world.level = null;
     enterLevel(s.levelId, 'Retomas la marcha donde lo dejaste.');
     world.pasosNivel = Math.max(0, s.pasosNivel || 0);

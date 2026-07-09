@@ -28,6 +28,7 @@
   Sprites.tryOverrides([
     ...Sprites.list(),
     ...Object.values(world.data.entities).map((e) => e.glyph),
+    ...Object.keys(world.data.objects),
   ]);
 
   // ---------- input ----------
@@ -355,6 +356,44 @@
   // (la velocidad de giro online vive en Fisica.GIRO_JUGADOR: cliente y
   // servidor DEBEN integrar el rumbo con la misma constante)
   let lastFrameT = 0;
+  let smilerThreatEl = null;
+
+  function smilerThreatFrame() {
+    const gameScreen = document.getElementById('screen-game');
+    if (world.over || !gameScreen || gameScreen.style.display === 'none' ||
+        !world.level || !world.player || !world.entities?.length) {
+      if (smilerThreatEl) smilerThreatEl.style.opacity = '0';
+      return;
+    }
+    let best = null, bestD = Infinity;
+    for (const e of world.entities) {
+      if (!e.viva || e.def?.glyph !== 'smiler') continue;
+      const ex = e.rx ?? e.x, ey = e.ry ?? e.y;
+      const px = world.player.rx ?? world.player.x, py = world.player.ry ?? world.player.y;
+      const d = Math.hypot((ex + 0.5) - (px + 0.5), (ey + 0.5) - (py + 0.5));
+      if (d >= 8 || d >= bestD) continue;
+      if (window.FOV && !FOV.los(world.map.grid,
+        Math.round(e.x), Math.round(e.y),
+        Math.round(world.player.x), Math.round(world.player.y))) continue;
+      best = e;
+      bestD = d;
+    }
+    if (!best) {
+      if (smilerThreatEl) smilerThreatEl.style.opacity = '0';
+      return;
+    }
+    if (!smilerThreatEl) {
+      smilerThreatEl = document.createElement('img');
+      smilerThreatEl.id = 'smiler-threat';
+      smilerThreatEl.src = 'assets/sprites/smiler.png?v=preview';
+      smilerThreatEl.alt = 'Smiler';
+      document.body.appendChild(smilerThreatEl);
+    }
+    const k = Math.max(0, Math.min(1, (8 - bestD) / 7));
+    const escala = 0.45 + k * k * 7.5;
+    smilerThreatEl.style.opacity = String(Math.max(0, Math.min(0.92, k * 1.15)));
+    smilerThreatEl.style.transform = `translate(-50%, -50%) scale(${escala})`;
+  }
 
   function loop(t) {
     requestAnimationFrame(loop);
@@ -439,6 +478,7 @@
         Render.frame(world, t);
       }
       Minimap.frame(world, t);
+      smilerThreatFrame();
     } catch (err) {
       (window.__renderErrors = window.__renderErrors || []).push(String(err && err.stack || err).slice(0, 300));
       if (window.__renderErrors.length > 8) window.__renderErrors.length = 8;
