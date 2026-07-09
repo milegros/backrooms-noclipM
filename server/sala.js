@@ -877,6 +877,13 @@ class Sala {
 // ---------- registro de salas ----------
 const salas = new Map();
 
+// Una sala vacía se libera tras un periodo de gracia: si alguien vuelve antes,
+// conserva su estado dinámico (paredes rotas, contenedores registrados,
+// entidades muertas); si no, se recupera la memoria — la misma clave recrea
+// el MISMO mapa desde su semilla. Sin esto el registro solo crecía: cada
+// nivel::instancia visitado retenía su grid y sus entidades para siempre.
+const GRACIA_SALA_VACIA = 5 * 60 * 1000;
+
 function crearSala(nivelId, inst, grupo) {
   const sala = new Sala(nivelId, inst, grupo);
   salas.set(claveInterna(nivelId, inst, grupo), sala);
@@ -901,7 +908,16 @@ const metricas = { ultMs: 0, maxMs: 0, medias: [], bytes: 0, bytesT: Date.now(),
 
 function tickTodas(ahora) {
   const t0 = process.hrtime.bigint();
-  for (const s of salas.values()) {
+  for (const [clave, s] of salas) {
+    if (!s.jugadores.size) {
+      if (!s._vaciaDesde) s._vaciaDesde = ahora;
+      else if (ahora - s._vaciaDesde >= GRACIA_SALA_VACIA) {
+        salas.delete(clave);
+        console.log(`[sala] cerrada ${s.clave} (vacía)`);
+      }
+      continue;
+    }
+    s._vaciaDesde = 0;
     // una sala rota no puede tumbar el resto del mundo
     try { s.tick(ahora); } catch (e) { console.error(`[sala ${s.clave}] tick:`, e.message); }
   }
@@ -937,4 +953,4 @@ setInterval(() => {
 
 function todas() { return [...salas.values()]; }
 
-module.exports = { Sala, asignar, tickTodas, estado, todas, SALA_PUBLICA };
+module.exports = { Sala, asignar, tickTodas, estado, todas, SALA_PUBLICA, GRACIA_SALA_VACIA };
