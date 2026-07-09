@@ -1,0 +1,28 @@
+Este Pull Request incluye la implementación completa de la cámara libre en tercera persona (Pointer Lock), mejoras de control, interactividad de depuración y nuevos efectos visuales inmersivos de cordura:
+
+### Cambios incluidos:
+
+1. **Modo de Cámara Pointer Lock**:
+   * Opción en Ajustes para alternar entre el modo de arrastre tradicional con clic y la cámara libre en tercera persona (Pointer Lock).
+2. **Deslizador de Sensibilidad**:
+   * Se añade una opción en Ajustes para configurar la sensibilidad de rotación del ratón (de 10% a 300%).
+3. **Inversión Horizontal**:
+   * Opción en Ajustes para invertir el eje horizontal del movimiento de la cámara.
+4. **Solución a giros bruscos de cámara (evita que se vuelva loca)**:
+   * Se ignora el primer frame de movimiento inmediatamente posterior a la adquisición del Pointer Lock para evitar el tirón del cursor provocado por el centrado del navegador.
+   * Se filtra cualquier movimiento anómalo mayor a 200 píxeles por frame.
+5. **Corrección de personaje atascado al presionar ESC**:
+   * Al liberar el Pointer Lock presionando Escape, se limpian las teclas pulsadas (teclas.clear()) y se detiene el movimiento en red (Net.parar()) para evitar que el personaje siga caminando de forma involuntaria.
+6. **Comportamiento mejorado de ESC**:
+   * Presionar ESC cuando el puntero está bloqueado solo libera el cursor del ratón, y no abre el menú de Ajustes simultáneamente.
+7. **Efectos visuales de cordura baja en 3D**:
+   * Tinte púrpura/rojo oscuro dinámico en el fondo y la niebla (p.cordura < 40).
+   * Pulsación y distorsión dinámica del bloom (brillo fluorescente) al disminuir la cordura.
+   * Incremento en la densidad de la niebla base.
+   * Parpadeos erráticos en la linterna del jugador y fluorescentes del techo.
+   * Temblor de cámara físico por pánico (p.cordura < 30).
+8. **Barras debug interactivas**:
+   * Las barras de depuración en la esquina inferior izquierda (Salud, Comida, Bebida, Cordura) son ahora completamente clicables. Permite cambiar cualquier valor inmediatamente con un clic para facilitar pruebas.
+9. **Bloqueo de ESC en pantalla completa**:
+   * Se integra la Keyboard Lock API para que presionar ESC no cierre la pantalla completa (permite usar la tecla para cerrar mochilas/mapas o abrir ajustes). Para salir de la pantalla completa, ahora se debe mantener presionado ESC durante 2 segundos.
+   * Se filtra el auto-repeat del teclado en la tecla ESC para evitar bucles de abrir/cerrar menú al mantenerla pulsada.

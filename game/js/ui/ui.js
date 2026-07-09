@@ -70,7 +70,7 @@
   const ICONOS_INV = {
     agua_almendras: 'refresco', botiquin: 'botiquin', linterna: 'linterna',
     chaqueta: 'chaqueta', amuleto: 'cuadro', llave_nivel: 'llave',
-    tuberia: 'tuberia', fuego_griego: 'fuego', guante_paralisis: 'guante',
+    tuberia: 'tuberia', fuego_griego: 'fuego', sal_fuego: 'fuego', guante_paralisis: 'guante',
     detector: 'antena', trebol: 'trebol',
     mascara_gas: 'mascara', botas_reforzadas: 'bota',
   };
@@ -223,6 +223,33 @@
     }
   }
 
+  function highlightSlots(active, itemId) {
+    for (const id of ['bp-mano-0', 'bp-mano-1', 'mano-0', 'mano-1', 'eq-cara', 'eq-cuerpo', 'eq-pies']) {
+      const el = $(id);
+      if (el) el.classList.remove('slot-highlight-valid');
+    }
+    if (!active || !itemId) return;
+    const def = world.data.objects[itemId];
+    if (!def) return;
+    if (def.equipo) {
+      const el = $('eq-' + def.equipo);
+      if (el) el.classList.add('slot-highlight-valid');
+    } else {
+      for (const id of ['bp-mano-0', 'bp-mano-1', 'mano-0', 'mano-1']) {
+        const el = $(id);
+        if (el) el.classList.add('slot-highlight-valid');
+      }
+    }
+  }
+
+  function highlightBackpackGrid(active) {
+    const el = $('backpack-slots');
+    if (el) {
+      if (active) el.classList.add('slot-highlight-valid');
+      else el.classList.remove('slot-highlight-valid');
+    }
+  }
+
   function renderBackpack() {
     const cont = $('backpack-slots');
     cont.innerHTML = '';
@@ -243,7 +270,16 @@
         slot.appendChild(nom);
         slot.title = `${def.nombre} — ${def.descripcion}`;
         slot.draggable = true;
-        slot.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', String(i)));
+        slot.addEventListener('dragstart', (e) => {
+          e.stopPropagation();
+          e.dataTransfer.setData('text/plain', String(i));
+          setTimeout(() => {
+            highlightSlots(true, id);
+          }, 0);
+        });
+        slot.addEventListener('dragend', () => {
+          highlightSlots(false);
+        });
         slot.onclick = () => showItemInfo(i, ic);
       }
       cont.appendChild(slot);
@@ -343,7 +379,16 @@
       const enPanel = el.id.startsWith('bp-');
       el.onclick = () => (enPanel ? Game.desequipar(m) : Game.usarMano(m));
       el.draggable = true;
-      el.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', 'mano:' + m));
+      el.addEventListener('dragstart', (e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('text/plain', 'mano:' + m);
+        setTimeout(() => {
+          highlightBackpackGrid(true);
+        }, 0);
+      });
+      el.addEventListener('dragend', () => {
+        highlightBackpackGrid(false);
+      });
       el.addEventListener('dragover', (e) => e.preventDefault());
       el.addEventListener('drop', (e) => {
         e.preventDefault();
@@ -367,7 +412,16 @@
     if (!el) continue;
     el.onclick = () => Game.quitarEquipo(tipo);
     el.draggable = true;
-    el.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', 'eq:' + tipo));
+    el.addEventListener('dragstart', (e) => {
+      e.stopPropagation();
+      e.dataTransfer.setData('text/plain', 'eq:' + tipo);
+      setTimeout(() => {
+        highlightBackpackGrid(true);
+      }, 0);
+    });
+    el.addEventListener('dragend', () => {
+      highlightBackpackGrid(false);
+    });
     el.addEventListener('dragover', (e) => e.preventDefault());
     el.addEventListener('drop', (e) => {
       e.preventDefault();

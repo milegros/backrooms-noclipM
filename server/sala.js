@@ -382,6 +382,46 @@ class Sala {
     if (jug.muerto || jug.escondido) return;
     const id = jug.manos[mano];
     if (id === 'linterna') { this.luz(jug, !jug.luz); return; }
+    if (id === 'sal_fuego') {
+      jug.manos[mano] = null;
+      const [fx, fy] = cardinalDe(jug.rot ?? Math.PI);
+      const jx = Fisica.tileDe(jug.x);
+      const jy = Fisica.tileDe(jug.y);
+      let tx = jx, ty = jy;
+      for (let d = 1; d <= 5; d++) {
+        const nx = jx + fx * d;
+        const ny = jy + fy * d;
+        if (nx < 1 || ny < 1 || nx >= this.map.w - 1 || ny >= this.map.h - 1) break;
+        tx = nx; ty = ny;
+        if (!esTransitable(this.map, nx, ny)) break;
+        const ent = this.entidades.find(e => e.viva && e.x === nx && e.y === ny);
+        if (ent) break;
+      }
+      this.hacerRuido(tx, ty, 16);
+      for (const e2 of this.entidades) {
+        if (!e2.viva || Math.abs(e2.x - tx) > 1 || Math.abs(e2.y - ty) > 1) continue;
+        e2.vida -= 45;
+        if (e2.vida <= 0) { e2.viva = false; this.difundir({ t: 'entMuere', uid: e2.uid }); }
+        else this.difundir({ t: 'entHit', uid: e2.uid });
+      }
+      for (const j of this.jugadores.values()) {
+        if (j.muerto) continue;
+        const pX = Fisica.tileDe(j.x);
+        const pY = Fisica.tileDe(j.y);
+        if (Math.abs(pX - tx) <= 1 && Math.abs(pY - ty) <= 1) {
+          j.salud = Math.max(0, j.salud - 25);
+          this.enviar(j.ws, { t: 'salud', valor: j.salud });
+          if (j.salud <= 0) {
+            this.morir(j, 'la explosión de la Sal de fuego');
+          } else {
+            this.enviar(j.ws, { t: 'aviso2', txt: '¡La explosión te alcanza a ti también!' });
+          }
+        }
+      }
+      this.difundir({ t: 'golpe', id: jug.id, x: tx, y: ty });
+      this.enviarInv(jug);
+      return;
+    }
     if (id !== 'tuberia') return;
     const ahora = Date.now();
     if (ahora - (jug.ultGolpe || 0) < 400) return;
@@ -473,6 +513,43 @@ class Sala {
             else this.difundir({ t: 'entHit', uid: e.uid });
           }
           this.difundir({ t: 'golpe', id: jug.id, x: jug.x, y: jug.y });
+        } else if (ef.activo === 'sal_fuego') {
+          jug.inv.splice(m.slot, 1);
+          const [fx, fy] = cardinalDe(jug.rot ?? Math.PI);
+          const jx = Fisica.tileDe(jug.x);
+          const jy = Fisica.tileDe(jug.y);
+          let tx = jx, ty = jy;
+          for (let d = 1; d <= 5; d++) {
+            const nx = jx + fx * d;
+            const ny = jy + fy * d;
+            if (nx < 1 || ny < 1 || nx >= this.map.w - 1 || ny >= this.map.h - 1) break;
+            tx = nx; ty = ny;
+            if (!esTransitable(this.map, nx, ny)) break;
+            const ent = this.entidades.find(e => e.viva && e.x === nx && e.y === ny);
+            if (ent) break;
+          }
+          this.hacerRuido(tx, ty, 16);
+          for (const e2 of this.entidades) {
+            if (!e2.viva || Math.abs(e2.x - tx) > 1 || Math.abs(e2.y - ty) > 1) continue;
+            e2.vida -= 45;
+            if (e2.vida <= 0) { e2.viva = false; this.difundir({ t: 'entMuere', uid: e2.uid }); }
+            else this.difundir({ t: 'entHit', uid: e2.uid });
+          }
+          for (const j of this.jugadores.values()) {
+            if (j.muerto) continue;
+            const pX = Fisica.tileDe(j.x);
+            const pY = Fisica.tileDe(j.y);
+            if (Math.abs(pX - tx) <= 1 && Math.abs(pY - ty) <= 1) {
+              j.salud = Math.max(0, j.salud - 25);
+              this.enviar(j.ws, { t: 'salud', valor: j.salud });
+              if (j.salud <= 0) {
+                this.morir(j, 'la explosión de la Sal de fuego');
+              } else {
+                this.enviar(j.ws, { t: 'aviso2', txt: '¡La explosión te alcanza a ti también!' });
+              }
+            }
+          }
+          this.difundir({ t: 'golpe', id: jug.id, x: tx, y: ty });
         } else if (ef.activo === 'paralisis') {
           jug.inv.splice(m.slot, 1);
           for (const e of this.entidades) {

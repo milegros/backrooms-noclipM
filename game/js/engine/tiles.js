@@ -572,18 +572,65 @@
   function arbolTile(pal, rng) {
     const c = canvas(TILE, TILE + 18), ctx = c.getContext('2d');
     const cx = TILE / 2;
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(cx, TILE + 8, 16, 6, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = '#4a3a2a';
-    ctx.fillRect(cx - 4, TILE - 12, 8, 26);
-    ctx.fillStyle = '#5a4632';
-    ctx.fillRect(cx - 1, TILE - 12, 4, 26);
-    ctx.fillStyle = shade(pal.pared, 0.9);
-    ctx.beginPath(); ctx.ellipse(cx, 20, 21, 17, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = shade(pal.pared, 1.18);
-    ctx.beginPath(); ctx.ellipse(cx - 6, 14, 11, 8, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = shade(pal.pared, 0.7);
-    ctx.beginPath(); ctx.ellipse(cx + 8, 26, 9, 7, 0, 0, 7); ctx.fill();
+
+    // Sombra del árbol en el suelo
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(cx, TILE + 8, 16, 6, 0, 0, 7);
+    ctx.fill();
+
+    // Estructura de ramas nudosas de un árbol seco: [x1, y1, x2, y2, grosor]
+    const segments = [
+      [24, 62, 24, 45, 8],     // Tronco principal base
+      [24, 52, 14, 46, 4],     // Rama baja izquierda
+      [14, 46, 8, 44, 2],
+      [24, 50, 34, 42, 4],     // Rama baja derecha
+      [34, 42, 38, 40, 2],
+      [24, 45, 16, 32, 6],     // Rama principal izquierda
+      [16, 32, 8, 20, 3],      // Ramificaciones finas
+      [8, 20, 4, 12, 1.5],
+      [16, 32, 20, 22, 3],
+      [20, 22, 17, 10, 1.5],
+      [24, 45, 32, 34, 6],     // Rama principal derecha
+      [32, 34, 40, 24, 3],
+      [40, 24, 44, 14, 1.5],
+      [32, 34, 28, 20, 3],
+      [28, 20, 30, 8, 1.5]
+    ];
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // 1. Contorno oscuro para dar nitidez pixel-art
+    ctx.strokeStyle = '#0e0c0a';
+    for (const s of segments) {
+      ctx.lineWidth = s[4] + 2.5;
+      ctx.beginPath();
+      ctx.moveTo(s[0], s[1]);
+      ctx.lineTo(s[2], s[3]);
+      ctx.stroke();
+    }
+
+    // 2. Madera base del color de las paredes de la paleta (escala de grises/marrón seco)
+    ctx.strokeStyle = shade(pal.pared, 0.45);
+    for (const s of segments) {
+      ctx.lineWidth = s[4];
+      ctx.beginPath();
+      ctx.moveTo(s[0], s[1]);
+      ctx.lineTo(s[2], s[3]);
+      ctx.stroke();
+    }
+
+    // 3. Luces de volumen (desplazadas ligeramente para simular iluminación lateral)
+    ctx.strokeStyle = shade(pal.pared, 0.85);
+    for (const s of segments) {
+      ctx.lineWidth = Math.max(1, s[4] * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(s[0] - 1, s[1]);
+      ctx.lineTo(s[2] - 1, s[3]);
+      ctx.stroke();
+    }
+
     return c;
   }
 

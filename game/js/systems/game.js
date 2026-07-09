@@ -749,6 +749,13 @@
     if (world.player.sed <= 0 && world.turn % 3 === 0) world.hurt(2, 'la deshidratación', true);
     if (world.player.hambre <= 0 && world.turn % 5 === 0) world.hurt(1, 'la inanición', true);
 
+    // El calor extremo de la Sal de fuego quema las manos (-1 salud cada 4 turnos si se lleva equipada en la mano)
+    if (world.enMano('sal_fuego') && world.turn % 4 === 0) {
+      world.log('El calor extremo de la Sal de fuego te quema las manos.', 'danger');
+      world.hurt(1, 'las quemaduras de la Sal de fuego', true);
+      if (window.Effects) Effects.particles(world.player.x, world.player.y, '#ff4500', 4);
+    }
+
     // Sintonía (v18): el lugar cala en ti — o te suelta, muy despacio
     if (world.instinto('sangre_amarilla') && world.turnTotal % 12 === 0 && world.player.salud < 100)
       world.player.salud = Math.min(100, world.player.salud + 1);
@@ -1035,7 +1042,7 @@
         d = 7;
       }
       if (d >= 14) {
-        const pool = ['agua_almendras', 'agua_almendras', 'botiquin', 'amuleto', 'linterna', 'chaqueta', 'mascara_gas', 'botas_reforzadas', 'tuberia', 'fuego_griego', 'guante_paralisis', 'trebol'];
+        const pool = ['agua_almendras', 'agua_almendras', 'botiquin', 'amuleto', 'linterna', 'chaqueta', 'mascara_gas', 'botas_reforzadas', 'tuberia', 'fuego_griego', 'guante_paralisis', 'trebol', 'sal_fuego'];
         const id = pool[Math.min(pool.length - 1, Math.floor((d - 14) / 7 * pool.length + world.rng.int(0, 2)))];
         if (world.player.inv.length >= 6) {
           world.log(`Dado: ${d}. Hay algo útil… pero no te cabe nada más.`, 'event');
@@ -1161,6 +1168,59 @@
     if (window.Sfx) Sfx.play('registrar');
   }
 
+  function lanzarSalFuego() {
+    const g = world.map.grid;
+    const [fx, fy] = ROT_VEC[world.player.rot ?? 2];
+    let tx = world.player.x, ty = world.player.y;
+    for (let d = 1; d <= 5; d++) {
+      const nx = world.player.x + fx * d;
+      const ny = world.player.y + fy * d;
+      if (nx < 1 || ny < 1 || nx >= g.w - 1 || ny >= g.h - 1) break;
+      tx = nx; ty = ny;
+      if (!MapGen.walkable(g.t[ny * g.w + nx])) break;
+      const ent = world.entities.find(e => e.viva && e.x === nx && e.y === ny);
+      if (ent) break;
+    }
+    world.log('¡Lanzas la Sal de fuego! El cristal impacta y explota en un estallido de llamas.', 'good');
+    if (window.Effects) {
+      Effects.proyectil(world.player.x, world.player.y, tx, ty, '#ff5500');
+      setTimeout(() => {
+        Effects.doShake(8, 250);
+        Effects.flash(tx, ty, '#ff5500');
+        Effects.particles(tx, ty, '#ff3300', 25);
+      }, 380);
+    }
+    if (window.Sfx) Sfx.play('golpe');
+    let alcanzadas = 0;
+    for (const e of world.entities) {
+      if (!e.viva) continue;
+      if (Math.abs(e.x - tx) <= 1 && Math.abs(e.y - ty) <= 1) {
+        e.vida -= 45;
+        e._hitT = performance.now();
+        e.huyendo = 5;
+        e.revelada = true;
+        alcanzadas++;
+        if (window.Effects) {
+          Effects.particles(e.x, e.y, '#ff5500', 12);
+          Effects.number(e.x, e.y, '−45', '#ff5500');
+        }
+        if (e.vida <= 0) {
+          e.viva = false;
+          world.log(`${e.def.nombre} es desintegrado por la explosión.`, 'good');
+          world.tune(5);
+        }
+      }
+    }
+    if (Math.abs(world.player.x - tx) <= 1 && Math.abs(world.player.y - ty) <= 1) {
+      world.log('¡La explosión te alcanza a ti también!', 'danger');
+      world.hurt(25, 'la explosión de la Sal de fuego', true);
+      if (window.Effects) {
+        Effects.particles(world.player.x, world.player.y, '#ff0000', 8);
+      }
+    }
+    world.hacerRuido(tx, ty, 16);
+  }
+
   function useItem(slot) {
     if (world.online) { Net.mochila('usarItem', { slot }); return; }
     if (world.busy || world.over) return;
@@ -1178,6 +1238,13 @@
     if (def.efecto?.activo === 'paralisis') {
       world.player.inv.splice(slot, 1);
       descargarParalisis();
+      world.ui.updateHUD();
+      worldStep();
+      return;
+    }
+    if (def.efecto?.activo === 'sal_fuego') {
+      world.player.inv.splice(slot, 1);
+      lanzarSalFuego();
       world.ui.updateHUD();
       worldStep();
       return;
@@ -1236,6 +1303,7 @@
       else manos[m] = null;
       if (def.efecto.activo === 'fuego') lanzarFuego();
       else if (def.efecto.activo === 'paralisis') descargarParalisis();
+      else if (def.efecto.activo === 'sal_fuego') lanzarSalFuego();
       world.ui.updateHUD();
       worldStep();
     }

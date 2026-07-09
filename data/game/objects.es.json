@@ -130,5 +130,16 @@
   },
   "color": "#68d868",
   "url": "https://backrooms.fandom.com/wiki/Object_13"
+ },
+ "sal_fuego": {
+  "id": "sal_fuego",
+  "nombre": "Sal de fuego (Object 15)",
+  "descripcion": "Cristal anómalo que brilla y se mantiene a 500 °C. Es extremadamente volátil. Se usa para lanzarse desde la mano y provocar una explosión de fuego en un área de 3x3.",
+  "manos": 1,
+  "efecto": {
+   "activo": "sal_fuego"
+  },
+  "color": "#e25822",
+  "url": "https://backrooms.fandom.com/wiki/Object_15"
  }
 }

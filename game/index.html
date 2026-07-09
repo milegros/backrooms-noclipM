@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=254">
+<link rel="stylesheet" href="css/style.css?v=270">
 </head>
 <body>
 <div id="app">
@@ -213,9 +213,20 @@
         <button id="btn-admin" class="btn-small" style="margin-top:0">Entrar</button>
       </div>
       <p id="admin-msg"></p>
-      <div class="sound-row" id="debug-row" style="display:none"><label>🐞 Debug</label>
-        <select id="debug-nivel"></select>
-        <button id="btn-debug-tp" class="btn-small" style="margin-top:0">Teleport</button>
+      <div id="debug-container" style="display:none;">
+        <div style="font-weight: bold; color: var(--amarillo); margin-bottom: 8px; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+          <span>🐞</span> Opciones de Guardián
+        </div>
+        <div class="sound-row" style="margin: 6px 0;">
+          <label style="flex: 0 0 100px;">Teletransporte</label>
+          <select id="debug-nivel"></select>
+          <button id="btn-debug-tp" class="btn-small" style="margin-top:0; margin-left: 8px;">Teleport</button>
+        </div>
+        <div class="sound-row" style="margin: 6px 0;">
+          <label style="flex: 0 0 100px;">Generar Objeto</label>
+          <select id="debug-objeto"></select>
+          <button id="btn-debug-item" class="btn-small" style="margin-top:0; margin-left: 8px;">Añadir</button>
+        </div>
       </div>
       <div id="ctrl-list">
         <b>Controles</b><br>
@@ -305,35 +316,35 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=254"></script>
-<script src="js/engine/rng.js?v=254"></script>
-<script src="js/mapgen/mapgen.js?v=254"></script>
-<script src="js/engine/tiles.js?v=254"></script>
-<script src="js/engine/sprites.js?v=254"></script>
-<script src="js/engine/effects.js?v=254"></script>
-<script src="js/audio-manifest.js?v=254"></script>
-<script src="js/engine/sfx.js?v=254"></script>
-<script src="js/engine/fov.js?v=254"></script>
-<script src="js/systems/entities.js?v=254"></script>
-<script src="js/systems/rules.js?v=254"></script>
-<script src="js/engine/render.js?v=254"></script>
-<script src="js/lib/three.min.js?v=254"></script>
-<script src="js/lib/shaders/CopyShader.js?v=254"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=254"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=254"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=254"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=254"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=254"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=254"></script>
-<script src="js/engine/atmos3d.js?v=254"></script>
-<script src="js/engine/render3d.js?v=254"></script>
-<script src="js/systems/game.js?v=254"></script>
-<script src="js/ui/icons.js?v=254"></script>
-<script src="js/ui/ui.js?v=254"></script>
-<script src="js/ui/minimap.js?v=254"></script>
-<script src="js/sim/fisica.js?v=254"></script>
-<script src="js/net/otros.js?v=254"></script>
-<script src="js/net/cliente.js?v=254"></script>
-<script src="js/main.js?v=254"></script>
+<script src="js/data.js?v=270"></script>
+<script src="js/engine/rng.js?v=270"></script>
+<script src="js/mapgen/mapgen.js?v=270"></script>
+<script src="js/engine/tiles.js?v=270"></script>
+<script src="js/engine/sprites.js?v=270"></script>
+<script src="js/engine/effects.js?v=270"></script>
+<script src="js/audio-manifest.js?v=270"></script>
+<script src="js/engine/sfx.js?v=270"></script>
+<script src="js/engine/fov.js?v=270"></script>
+<script src="js/systems/entities.js?v=270"></script>
+<script src="js/systems/rules.js?v=270"></script>
+<script src="js/engine/render.js?v=270"></script>
+<script src="js/lib/three.min.js?v=270"></script>
+<script src="js/lib/shaders/CopyShader.js?v=270"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=270"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=270"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=270"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=270"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=270"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=270"></script>
+<script src="js/engine/atmos3d.js?v=270"></script>
+<script src="js/engine/render3d.js?v=270"></script>
+<script src="js/systems/game.js?v=270"></script>
+<script src="js/ui/icons.js?v=270"></script>
+<script src="js/ui/ui.js?v=270"></script>
+<script src="js/ui/minimap.js?v=270"></script>
+<script src="js/sim/fisica.js?v=270"></script>
+<script src="js/net/otros.js?v=270"></script>
+<script src="js/net/cliente.js?v=270"></script>
+<script src="js/main.js?v=270"></script>
 </body>
 </html>

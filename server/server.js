@@ -293,8 +293,21 @@ function comando(jug, sala, linea) {
       return;
     }
     cambiarDeSala(jug, sala, { destino: id, texto: 'El guardián camina por donde quiere.' }, { sinRetorno: true });
+  } else if (cmd === '/give' && arg) {
+    const id = arg.trim();
+    if (!DATA.objects[id]) {
+      sala.enviar(jug.ws, { t: 'aviso', txt: `Objeto desconocido: «${id}»` });
+      return;
+    }
+    if (jug.inv.length >= 6) {
+      sala.enviar(jug.ws, { t: 'aviso', txt: 'Tu mochila está llena.' });
+      return;
+    }
+    jug.inv.push(id);
+    sala.enviarInv(jug);
+    sala.enviar(jug.ws, { t: 'aviso', txt: `Objeto añadido: ${DATA.objects[id].nombre}` });
   } else {
-    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel>' });
+    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto>' });
   }
 }
 

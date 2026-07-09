@@ -248,10 +248,10 @@ input[type="range"]::-moz-range-thumb {
 .chk-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--amarillo);
   cursor: pointer; vertical-align: middle; margin-right: 6px; }
 /* v20.2: fila de debug (teleport a niveles) */
-#debug-nivel { flex: 1; background: #0a0906; border: 1px solid var(--borde);
+#debug-nivel, #debug-objeto { flex: 1; background: #0a0906; border: 1px solid var(--borde);
   color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
   cursor: pointer; min-width: 0; }
-#debug-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
+#debug-container { border-top: 1px dashed var(--borde); padding-top: 10px; margin-top: 10px; }
 /* v23: contraseña de guardián + versión del juego en Ajustes */
 #admin-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
 #admin-clave { flex: 1; background: #0a0906; border: 1px solid var(--borde);
@@ -481,3 +481,12 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 ::-webkit-scrollbar-thumb { background: var(--amarillo-osc); border: 1px solid #0a0906; }
 ::-webkit-scrollbar-thumb:hover { background: var(--amarillo); }
 * { scrollbar-width: thin; scrollbar-color: var(--amarillo-osc) #0a0906; }
+
+/* v26.8: resalte de arrastre para ranuras válidas */
+.slot-highlight-valid {
+  border-color: var(--amarillo) !important;
+  box-shadow: 0 0 10px rgba(217, 198, 110, 0.45) !important;
+  background: rgba(217, 198, 110, 0.12) !important;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+

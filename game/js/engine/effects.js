@@ -123,14 +123,39 @@
         ctx.save();
         ctx.translate(px, py);
         ctx.rotate(ang);
-        ctx.fillStyle = e.color;                      // hoja
-        ctx.beginPath();
-        ctx.moveTo(7, 0); ctx.lineTo(-3, -2.5); ctx.lineTo(-3, 2.5);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#5a4a3a';                    // mango
-        ctx.fillRect(-8, -1.5, 5, 3);
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';      // destello
-        ctx.fillRect(2, -0.7, 3, 1.4);
+        if (e.color === '#ff5500') {
+          // Cristal de Sal de fuego: rombo brillante naranja/rojo y más grande
+          ctx.fillStyle = '#ff3300';
+          ctx.beginPath();
+          ctx.moveTo(8, 0);
+          ctx.lineTo(0, -5);
+          ctx.lineTo(-8, 0);
+          ctx.lineTo(0, 5);
+          ctx.closePath();
+          ctx.fill();
+          
+          ctx.fillStyle = '#ffaa44';
+          ctx.beginPath();
+          ctx.moveTo(5, 0);
+          ctx.lineTo(0, -3);
+          ctx.lineTo(-5, 0);
+          ctx.lineTo(0, 3);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(-2, -1, 4, 2);
+        } else {
+          // Hoja metálica estándar (bisturí)
+          ctx.fillStyle = e.color;                      // hoja
+          ctx.beginPath();
+          ctx.moveTo(7, 0); ctx.lineTo(-3, -2.5); ctx.lineTo(-3, 2.5);
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#5a4a3a';                    // mango
+          ctx.fillRect(-8, -1.5, 5, 3);
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';      // destello
+          ctx.fillRect(2, -0.7, 3, 1.4);
+        }
         ctx.restore();
       }
       ctx.restore();
