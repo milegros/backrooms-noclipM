@@ -418,7 +418,7 @@
   }
 
   // ---------- generación completa de un nivel ----------
-  function generate(levelDef, rng, opts = {}) {
+  function generate(levelDef, rng) {
     let [w, h] = levelDef.tam;
     // v20: los niveles con varias salidas CRECEN — que te sientas perdido de
     // verdad y cada salida quede en su propio rincón del nivel
@@ -538,16 +538,6 @@
       const p = sitioPara(id);
       if (!libre(p)) continue;
       props.push({ x: p[0], y: p[1], id, contenedor: true, registrado: false });
-    }
-    // cofre de bienvenida (v25.2): SOLO en la generación inicial de Level 0
-    // (opts.inicio — no en cada ventana del nivel infinito, o lloverían
-    // mascaras de gas cada vez que la ventana se desplaza), muy cerca del
-    // spawn, con una mascara de gas GARANTIZADA (sin pasar por el pool
-    // aleatorio de registrar())
-    if (levelDef.id === 'level-0' && opts.inicio) {
-      const cerca = reach.filter(([x, y]) => libre([x, y]) && dist[y * g.w + x] <= 4);
-      const p = cerca.length ? rng.pick(cerca) : null;
-      if (p) props.push({ x: p[0], y: p[1], id: 'cofre', contenedor: true, registrado: false, garantizado: 'mascara_gas' });
     }
     // el reloj es exclusivo de Level 80 — SIEMPRE colgado de una pared
     if (levelDef.id === 'level-80') {

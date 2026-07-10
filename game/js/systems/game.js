@@ -447,7 +447,7 @@
       world.rng = RNG.create(levelSeed);
       world.ventanaN = 0;
 
-      world.map = MapGen.generate(def, world.rng, { inicio: true });
+      world.map = MapGen.generate(def, world.rng);
       world.tiles = Tiles.build(def, world.rng);
       world.entities = Entities.create(world.map.entitySpawns, world.data.entities, world.rng);
 
@@ -1004,23 +1004,6 @@
     cont.registrado = true;
     if (window.Sfx) Sfx.play('registrar');
     world.hacerRuido(world.player.x, world.player.y, 10); // registrar HACE RUIDO
-    // cofre de bienvenida (v25.2): contenido FIJO, sin pasar por el pool
-    // aleatorio ni arriesgarse a un mal resultado — es un regalo, no una tirada
-    if (cont.garantizado) {
-      const id = cont.garantizado;
-      world.rollDice(`Registras ${NOMBRES_CONT[cont.id] ?? 'el contenedor'}…`, () => {
-        if (world.player.inv.length >= 6) {
-          world.log('Hay algo útil dentro… pero no te cabe nada más.', 'event');
-        } else {
-          world.player.inv.push(id);
-          Profiles.registrarDescubierto('objetos', id);
-          world.log(`Este cofre parecía esperarte: ${world.data.objects[id].nombre}.`, 'good');
-          if (window.Effects) Effects.flash(world.player.x, world.player.y, '#ffe9a0');
-        }
-        worldStep();
-      });
-      return;
-    }
     world.rollDice(`Registras ${NOMBRES_CONT[cont.id] ?? 'el contenedor'}…`, (d) => {
       // lengua de las paredes: los contenedores te susurran — nunca pifias
       if (d < 7 && world.instinto('lengua_paredes')) {
