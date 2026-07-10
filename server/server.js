@@ -14,10 +14,18 @@ const { asignar, tickTodas, estado } = require('./sala');
 const { DATA } = require('./sim/mundo');
 const db = require('./db');
 
-// clave de administración: variable de entorno MMO_ADMIN o una aleatoria
-// impresa al arrancar (el streamer la escribe en el chat: /admin <clave>)
-const ADMIN_CLAVE = process.env.MMO_ADMIN ||
+// clave de administración: variable de entorno MMO_ADMIN, o la última fijada
+// en caliente con /admin-clave (persistida en datos/, fuera del repo), o una
+// aleatoria impresa al arrancar. Un guardián YA autenticado puede cambiarla
+// sin tocar el servidor ni reiniciar nada — process.env solo se lee una vez
+// al arrancar el proceso, así que editar el .service no basta sin restart.
+const ADMIN_CLAVE_FICHERO = path.join(__dirname, 'datos', 'admin-clave.txt');
+let ADMIN_CLAVE = process.env.MMO_ADMIN ||
   Math.random().toString(36).slice(2, 10);
+try {
+  const guardada = fs.readFileSync(ADMIN_CLAVE_FICHERO, 'utf8').trim();
+  if (guardada) ADMIN_CLAVE = guardada;
+} catch (e) { /* sin clave guardada aún: usa MMO_ADMIN o la aleatoria */ }
 
 const PUERTO = parseInt(process.argv[2], 10) || 8080;
 const RAIZ = path.join(__dirname, '..', 'game');
@@ -306,8 +314,23 @@ function comando(jug, sala, linea) {
     jug.inv.push(id);
     sala.enviarInv(jug);
     sala.enviar(jug.ws, { t: 'aviso', txt: `Objeto añadido: ${DATA.objects[id].nombre}` });
+  } else if (cmd === '/admin-clave' && arg) {
+    const nueva = arg.trim();
+    if (nueva.length < 3) {
+      sala.enviar(jug.ws, { t: 'aviso', txt: 'La clave debe tener al menos 3 caracteres.' });
+      return;
+    }
+    ADMIN_CLAVE = nueva;
+    try {
+      fs.mkdirSync(path.dirname(ADMIN_CLAVE_FICHERO), { recursive: true });
+      fs.writeFileSync(ADMIN_CLAVE_FICHERO, nueva);
+      sala.enviar(jug.ws, { t: 'aviso', txt: 'Clave de guardián actualizada y guardada: sobrevive a un reinicio.' });
+    } catch (e) {
+      sala.enviar(jug.ws, { t: 'aviso', txt: 'Clave actualizada para esta sesión, pero no se pudo guardar en disco.' });
+    }
+    console.log(`[admin] ${jug.nombre}#${jug.id} cambió la clave de guardián`);
   } else {
-    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto>' });
+    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto> · /admin-clave <nueva>' });
   }
 }
 
@@ -327,5 +350,5 @@ setInterval(() => {
 
 servidor.listen(PUERTO, () => {
   console.log(`BACKROOMS MMO en http://localhost:${PUERTO}  (ws en /ws)`);
-  console.log(`clave de admin: /admin ${ADMIN_CLAVE}   (fija otra con la variable MMO_ADMIN)`);
+  console.log(`clave de admin: /admin ${ADMIN_CLAVE}   (cámbiala en caliente con /admin-clave <nueva> una vez dentro, o fija otra con la variable MMO_ADMIN)`);
 });

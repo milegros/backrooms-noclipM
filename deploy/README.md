@@ -59,17 +59,23 @@ systemctl enable --now backrooms-mmo   # el servicio ya escucha en 8080
 
 ## La clave de administración (moderación en el chat)
 
-Edita `/etc/systemd/system/backrooms-mmo.service` y cambia:
-
-```
-Environment=MMO_ADMIN=tu-clave-secreta
-```
-
-Después: `systemctl daemon-reload && systemctl restart backrooms-mmo`.
 En el chat del juego: `/admin tu-clave-secreta` te convierte en guardián →
-`/anuncio <texto>` (global), `/kick <nombre>`, `/mute <nombre> [min]`, `/ban <nombre>`
-y `/tp <nivel>` (teletransporte de debug: `/tp 14` o `/tp level-483`).
-No escribas la clave en directo.
+`/anuncio <texto>` (global), `/kick <nombre>`, `/mute <nombre> [min]`, `/ban <nombre>`,
+`/tp <nivel>` (teletransporte de debug: `/tp 14` o `/tp level-483`) y `/give <objeto>`
+(añade un objeto a tu mochila). No escribas la clave en directo.
+
+**Cambiar la clave sin reiniciar el servidor**: una vez seas guardián,
+`/admin-clave <nueva>` la cambia AL INSTANTE y la guarda en
+`server/datos/admin-clave.txt` (fuera del repo, nunca se sube a GitHub) —
+sobrevive a que el proceso se reinicie solo. Es la forma recomendada de
+cambiarla; no hace falta SSH para esto.
+
+**Arranque inicial / si no tienes ninguna clave aún**: edita
+`/etc/systemd/system/backrooms-mmo.service` y cambia
+`Environment=MMO_ADMIN=tu-clave-secreta`, luego
+`systemctl daemon-reload && systemctl restart backrooms-mmo`. Esta variable
+solo se usa si `server/datos/admin-clave.txt` no existe todavía — en cuanto
+uses `/admin-clave` una vez, el fichero manda.
 
 ## Operación diaria
 
