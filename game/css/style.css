@@ -441,8 +441,8 @@ body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
   padding: 24px 30px; }
 .btn-close-box {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 20px;
+  right: 34px;
   background: transparent;
   border: 1px solid var(--borde);
   color: var(--gris);
