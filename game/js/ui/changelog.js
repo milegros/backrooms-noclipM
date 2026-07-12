@@ -4,6 +4,9 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.4', cambios: [
+      'Más retoques en el sprite del jugador.',
+    ] },
     { v: 'v28.2', cambios: [
       'Nuevo HUD vertical de equipamiento (cara/cuerpo/pies) en la esquina inferior izquierda.',
       'Retoques en el sprite del jugador.',
