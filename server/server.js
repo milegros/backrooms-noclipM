@@ -323,6 +323,7 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
   jug.sec = (jug.sec || 0) + 1;
   jug._posT = Date.now();
   jug._margen = 0.8;
+  nueva.protegerPrimeraVisita(jug);
   nueva.prepararCaminata(jug);
   const id = jug.id;
   nueva.jugadores.set(id, jug);

@@ -27,6 +27,7 @@ function chatReciente(nivel, desdeSeq) {
   return chatLog.filter((c) => (!nivel || c.nivel === nivel) && c.seq > (desdeSeq | 0));
 }
 const REMODEL_ONLINE = false; // ver nota en tick(): apagada hasta reenviar chunks al entrar
+const PROTECCION_ENTRADA_MS = 3000;
 
 // vector cardinal más cercano a un ángulo θ (0=N, π/2=E, π=S, 3π/2=O)
 function cardinalDe(th) {
@@ -142,11 +143,14 @@ class Sala {
       // ilegales acumula (vel = speedhack, muro = noclip) — señal de auditoría
       conectadoEn: Date.now(), rechazos: { vel: 0, muro: 0 },
       retorno: null, // puerta personal de vuelta (v23; la pone cambiarDeSala)
+      nivelesProtegidos: new Set(),
+      invulnerableHasta: 0,
       // v24 — autoridad del cliente con validación:
       sec: 0,            // nº de teleport: descarta informes en vuelo tras un salto
       _posT: Date.now(), // hora del último informe (presupuesto de velocidad)
       _margen: 0.8,      // cubeta de distancia disponible (anti-speedhack)
     };
+    this.protegerPrimeraVisita(jug);
     this.prepararCaminata(jug);
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
@@ -158,6 +162,16 @@ class Sala {
     this.difundir({ t: 'entra', id, nombre, x, y, rot: jug.rot });
     this.jugadores.set(id, jug);
     return jug;
+  }
+
+  // Una sola ventana de seguridad por nivel y por conexión/run. Al conservar
+  // el Set en `jug` durante los cruces, volver por una puerta no la renueva.
+  protegerPrimeraVisita(jug, ahora = Date.now()) {
+    jug.nivelesProtegidos ||= new Set();
+    if (jug.nivelesProtegidos.has(this.nivelId)) return false;
+    jug.nivelesProtegidos.add(this.nivelId);
+    jug.invulnerableHasta = ahora + PROTECCION_ENTRADA_MS;
+    return true;
   }
 
   // La caminata online es PERSONAL: tus pasos reales en el nivel te van
