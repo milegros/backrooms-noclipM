@@ -4,6 +4,10 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.6', cambios: [
+      'Arreglado (multijugador): algunas entidades podían golpear casi al instante, sin dar tiempo a esquivar el aviso. (josealmon)',
+      'Nueva protección de 3 segundos al entrar por primera vez a cada nivel, para no morir nada más cruzar. (josealmon)',
+    ] },
     { v: 'v28.5', cambios: [
       'Arreglado: la música del menú a veces seguía sonando después de empezar la partida.',
       'Los campos de contraseña ya no se rellenan solos con datos guardados del navegador.',
