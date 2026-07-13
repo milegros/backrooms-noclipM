@@ -56,7 +56,13 @@
           codice: {},
           records: { runs: 0, maxNiveles: 0, maxTurnos: 0, escapes: 0 },
           historial: [],
-          apariencia: Apariencia.DEFECTO,
+          // normalizar() arma objetos nuevos por categoría en vez de reusar
+          // Apariencia.DEFECTO por referencia — si no, TODOS los perfiles
+          // nuevos comparten el mismo objeto anidado (hoy inofensivo porque
+          // todo lo demás reemplaza la referencia entera vía normalizar/
+          // localStorage, pero una mutación in-place futura corrompería el
+          // default global para toda la sesión)
+          apariencia: Apariencia.normalizar(Apariencia.DEFECTO),
         };
       }
       d.activo = nombre;

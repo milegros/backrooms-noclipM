@@ -1400,6 +1400,19 @@
   // existen no se dibuja nada). Se compone SOBRE el sprite del jugador.
   const CAPA_MASCARA_GAS = ['mascara_down', 'mascara_up', 'mascara_side'];
 
+  // los 3 cachés de teñido (tintCache/tintadoCache/tintCuerpoCache) crecen
+  // sin límite mientras dura la sesión — sobre todo arrastrando un slider
+  // RGB del personalizador, que genera un canvas nuevo por cada valor
+  // intermedio. Se limpian solas en gameplay (no hace falta llamarlo ahí:
+  // la combinación real que se usa se recachea al toque), pero conviene
+  // vaciarlas al cerrar el panel de Personalizar, donde se genera la
+  // mayoría de esa basura y no vuelve a hacer falta.
+  function limpiarTintado() {
+    for (const k in tintCache) delete tintCache[k];
+    for (const k in tintadoCache) delete tintadoCache[k];
+    for (const k in tintCuerpoCache) delete tintCuerpoCache[k];
+  }
+
   build();
   window.Sprites = {
     get, tryOverrides, drawProp, frameCount, tiene,
@@ -1408,6 +1421,6 @@
     version: () => overrideVersion,
     overridePaths: rutasOverride,
     // personalización de personaje (v28)
-    tryCapasApariencia, estilosDisponibles, getTintado,
+    tryCapasApariencia, estilosDisponibles, getTintado, limpiarTintado,
   };
 })();

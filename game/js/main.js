@@ -1539,7 +1539,6 @@
     btnContinue.disabled = true;
     btn.textContent = 'CRUZANDO LA REALIDAD…';
     errNet.style.display = 'none';
-    $id('btn-start-offline').style.display = 'none';
     if (esperaConexion) clearInterval(esperaConexion);
     Net.iniciar(P.activeName(), salaPrivada || undefined);
     const t0 = Date.now();
@@ -1562,8 +1561,6 @@
         errNet.textContent = Net.ultimoError ||
           'No se pudo conectar con las Backrooms. ¿El servidor está despierto?';
         errNet.style.display = 'block';
-        // sin servidor a mano: ofrecer seguir en un jugador, sin tocar la URL
-        $id('btn-start-offline').style.display = 'inline-block';
       }
     }, 200);
   }
@@ -1715,14 +1712,6 @@
 
   $id('btn-start').onclick = () => {
     conectarAlServidor($id('btn-start'));
-  };
-  // sin servidor a mano (aparece recién si "DESPERTAR EN LEVEL 0" no pudo
-  // conectar): arranca la partida en un jugador, sin tocar la URL — misma
-  // ruta que usa ?autostart=1, Net.iniciar nunca se llama
-  $id('btn-start-offline').onclick = () => {
-    $id('btn-start-offline').style.display = 'none';
-    $id('title-net').style.display = 'none';
-    Game.startRun();
   };
   $id('btn-again').onclick = () => {
     refreshTitle();

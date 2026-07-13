@@ -581,7 +581,7 @@ menos). Orden de `cats` en `getTintado` (`sprites.js`) pasa de
 `['ojos','inferior','superior','vello','cabello']` — vello se suma a cabello en la lista de
 capas que van AL FRENTE de la ropa (mismo criterio que ya se aplicó a cabello en v28.7).
 **v28.19 — cache-bust faltante en overrides de sprite base**: reporte del usuario tras editar
-`player_down.png` y no ver el cambio jugando ("no se ve el formato del png"). Causa: el
+`player_down.png` y no ver el cambio jugando. Causa: el
 cache-bust por sesión (`?t=timestamp`) se había agregado en v28 SOLO a las rutas de capas de
 apariencia (`rutasCapaEstilo`/`rutasCapaDireccion`, por el mismo síntoma con Hair1.png/
 Eyes1.png), pero `rutasOverride` — la que carga `player_down/up/side.png`, sprites de
@@ -641,6 +641,34 @@ más arriba en este archivo) y se agregó la entrada v28.20 de esta sesión arri
 `VERSION_JUEGO` (estaba pisado en `'v28.7'` desde hace mucho, sin subir en cada sub-versión
 de este archivo pese a la instrucción de la cabecera de `changelog.js`) pasó a `'v28.20'`, y
 el cache-bust `?v=` de TODOS los `<script>/<link>` de `index.html` subió de 278 a 279.
+**v28.22 — 3 hallazgos de code review (sin bug de fondo, prolijidad)**: `tintCache`/
+`tintadoCache`/`tintCuerpoCache` (`sprites.js`) crecían sin límite durante la sesión —
+arrastrar un slider RGB del personalizador genera un canvas por cada valor intermedio
+(~4 por color, hasta 256 pasos). Nueva `Sprites.limpiarTintado()` vacía los 3, llamada al
+cerrar el panel (`btn-apariencia-close` en `ui.js`) — se reconstruyen solos en gameplay, no
+hace falta limpiarlos antes. `Profiles.create` (`game.js`) guardaba `apariencia:
+Apariencia.DEFECTO` por REFERENCIA — todo perfil nuevo compartía el mismo objeto anidado
+(inofensivo hoy porque todo lo demás pasa por `normalizar`/serialización a localStorage, pero
+una mutación in-place futura habría corrompido el default global); ahora guarda
+`Apariencia.normalizar(Apariencia.DEFECTO)`, que arma objetos nuevos por categoría. El
+watcher de `Sprites.version()` en `showApariencia` solo se limpia en "Confirmar" — se sumó un
+comentario de advertencia (no un fix, hoy no hay forma de cerrar el panel sin pasar por ahí)
+para que si algún día se agrega ESC/clic-afuera, no se olviden de `clearInterval(watcher)`
+también.
+**v28.23 — se saca el botón "Jugar sin conexión (un jugador)" (pedido explícito del
+usuario)**: existía desde v23.3 como fallback cuando `conectarAlServidor` no logra
+conectarse al MMO en 10s (o hay `Net.ultimoError`) — mostraba el error Y ofrecía seguir en
+un jugador sin servidor. El usuario lo identificó revisando el diff de este PR y pidió
+sacarlo a propósito (se le explicó el trade-off: sin el botón, si el servidor no responde
+el título vuelve a "DESPERTAR EN LEVEL 0" habilitado y con el error visible, pero ya NO
+ofrece la salida a un jugador — confirmó que quería sacarlo igual). Se sacaron las 3 patas:
+el `<button id="btn-start-offline">` de `index.html`, las dos líneas que lo mostraban/
+ocultaban en `conectarAlServidor` (`main.js`), y su `onclick` (que llamaba
+`Game.startRun()` directo). El resto del fix de v23.3 queda intacto: el botón
+"DESPERTAR" se re-habilita solo (no queda trabado) y el error se sigue mostrando en
+`#title-net`. Verificado con Puppeteer: tras el timeout de 10s sin servidor, `btn-start`
+queda habilitado con su texto normal, `#title-net` muestra el error, y
+`#btn-start-offline` ya no existe en el DOM.
 
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate

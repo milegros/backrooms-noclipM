@@ -960,6 +960,10 @@
     // mostrando el placeholder procedural para siempre. Este watcher
     // repinta apenas Sprites.version() suba (mismo contador que usa
     // render3d.js para lo mismo en la escena 3D).
+    // OJO: el único lugar que lo limpia es btn-apariencia-close de abajo —
+    // si algún día se suma otra forma de cerrar el panel (ESC, clic afuera),
+    // hay que llamar clearInterval(watcher) ahí también o queda un
+    // intervalo huérfano repintando cada 200 ms para siempre.
     let versionVista = Sprites.version();
     const watcher = setInterval(() => {
       const v = Sprites.version();
@@ -981,6 +985,7 @@
     };
     $('btn-apariencia-close').onclick = () => {
       clearInterval(watcher);
+      Sprites.limpiarTintado(); // el arrastre de sliders RGB deja muchos composites intermedios cacheados que ya no sirven — se reconstruyen solos en gameplay
       Game.Profiles.setApariencia(sel);
       $('apariencia-panel').style.display = 'none';
       if (window.Sfx) Sfx.play('ui');
