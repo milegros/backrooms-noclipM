@@ -114,9 +114,17 @@
     if (o) { o.rot = rot; o.rotObj = rot; o.giroT = performance.now(); }
   }
 
-  // cuantiza un ángulo θ a las 4 direcciones de sprite (0 N, 1 E, 2 S, 3 O)
+  // cuantiza un ángulo θ a las 4 direcciones de sprite (0 N, 1 E, 2 S, 3 O);
+  // normaliza a (-pi,pi] y redondea los empates a 45° alejando de cero por
+  // igual en ambos sentidos, si no A y D quedaban asimétricos por el propio
+  // redondeo de JS (y por el ruido de coma flotante justo en el empate)
   function dir4(th) {
-    return ((Math.round((th || 0) / (Math.PI / 2)) % 4) + 4) % 4;
+    let a = (th || 0) % (Math.PI * 2);
+    if (a > Math.PI) a -= Math.PI * 2;
+    else if (a <= -Math.PI) a += Math.PI * 2;
+    const q = a / (Math.PI / 2);
+    const rel = Math.sign(q) * Math.round(Math.abs(q) + 1e-9);
+    return ((rel % 4) + 4) % 4;
   }
 
   // txt ya viene filtrado por el servidor
@@ -150,7 +158,7 @@
       // pasos de los DEMÁS: sonido local si caminan cerca de ti (v25)
       if (w && w.player && !o.escondido) {
         o._paso = (o._paso || 0) + Math.hypot(o.rx - ax, o.ry - ay);
-        if (o._paso > 0.8) {
+        if (o._paso > 1.6) {
           o._paso = 0;
           if (window.Sfx && Math.hypot(o.rx - w.player.rx, o.ry - w.player.ry) < 8)
             Sfx.play('paso', w.level?.estilo?.suelo);
@@ -204,15 +212,19 @@
     const p = world?.player;
     for (const o of porId.values()) {
       if (o.escondido) continue; // dentro de una taquilla no hay nombre que leer
-      const [sx, sy] = proj(o.rx, o.ry);
+      // La capa social solo dibuja nombres/bocadillos cercanos. Evita proyectar
+      // cada jugador de una sala llena cuando no produciría ningún píxel.
+      const cercano = p && Math.hypot(o.rx - p.rx, o.ry - p.ry) <= RADIO_SOCIAL;
+      if (o.chat && (t - o.chatT) / CHAT_DUR >= 1) o.chat = null;
+      if (!cercano) continue;
+      const [sx, sy, detras] = proj(o.rx, o.ry);
+      if (detras) continue;
       if (sx < -80 || sy < -80 || sx > ctx.canvas.width + 80 || sy > ctx.canvas.height + 80) continue;
       // capa social de PROXIMIDAD: de lejos ves una figura, no sabes quién es
-      const cercano = p && Math.hypot(o.rx - p.rx, o.ry - p.ry) <= RADIO_SOCIAL;
-      if (cercano) nombre(ctx, sx, sy, o.nombre);
+      nombre(ctx, sx, sy, o.nombre);
       if (o.chat) {
         const k = (t - o.chatT) / CHAT_DUR;
-        if (k >= 1) o.chat = null;
-        else if (cercano) burbuja(ctx, sx, sy, o.chat, k);
+        burbuja(ctx, sx, sy, o.chat, k);
       }
     }
     // tu propio mensaje, sobre tu cabeza

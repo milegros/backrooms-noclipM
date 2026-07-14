@@ -22,12 +22,13 @@
 const Apariencia = require('../game/js/apariencia.js'); // fuente única estilos/colores permitidos
 
 const VERSION = 8; // v28: personalización de personaje (pelo/ojos/ropa) visible para otros
+const VERSION = 8; // v30: modo espectador del guardián (mensaje 'espectar')
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
 const COOLDOWN_CHAT = 1500;   // ms entre mensajes de chat
 const RADIO_CHAT = 14;        // casillas: el chat es de PROXIMIDAD (voz, no megafonía)
-const CAP_SALA = 60;          // jugadores por instancia de nivel
+const CAP_SALA = 50;          // jugadores por instancia de nivel
 const CAP_POR_IP = 8;         // conexiones simultáneas por IP
 const MAX_SALA_PRIVADA = 32;  // caracteres máximos del código de sala privada
 
@@ -86,6 +87,14 @@ function leer(raw) {
     case 'admin': { // contraseña de guardián desde Ajustes (responde {t:'admin', si})
       if (typeof m.clave !== 'string' || m.clave.length > 64) return null;
       return { t: 'admin', clave: m.clave };
+    }
+    case 'espectar': { // v30: el guardián observa a un jugador (null = dejar de hacerlo)
+      // v30.7: dir = rotar al siguiente/anterior errante de TODAS las salas
+      if (m.dir === 'sig' || m.dir === 'ant') return { t: 'espectar', dir: m.dir };
+      if (m.objetivo === null || m.objetivo === undefined) return { t: 'espectar', objetivo: null };
+      const objetivo = m.objetivo | 0;
+      if (objetivo <= 0) return null;
+      return { t: 'espectar', objetivo };
     }
     case 'ping': { // eco del sello de tiempo: el cliente mide su RTT con el pong
       const out = { t: 'ping' };

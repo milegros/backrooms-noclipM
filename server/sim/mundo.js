@@ -18,7 +18,7 @@ const FOV = global.FOV;
 // mismo string → mismo mapa en servidor y navegador.
 // En el mundo compartido las salidas aparecen SIEMPRE (se ignora `prob`, que
 // era para las ventanas infinitas del modo solo): una instancia fija sin
-// puertas sería una trampa para 60 personas. El cliente hace lo MISMO.
+// puertas sería una trampa para 50 personas. El cliente hace lo MISMO.
 function defParaOnline(def) {
   return {
     ...def,

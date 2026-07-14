@@ -9,6 +9,17 @@ Guía de todo lo que puedes hacer/modificar tú mismo, sin programar.
 
 **Doble clic en `game/index.html`.** Nada que instalar. Funciona sin internet.
 
+**Modo sin conexión = el MISMO juego que el online.** El botón pequeño «jugar sin
+conexión (modo solo)» de la portada arranca una partida en solitario con un
+**servidor local dentro de tu navegador**: mismas reglas, mismo movimiento libre,
+misma cámara, mismas entidades — literalmente el mismo código que usa el servidor
+real. Extras del modo local: los comandos de guardián `/tp <nivel>` y `/give <objeto>`
+funcionan con cualquier clave (es tu mundo), y la **remodelación no euclidiana**
+de los niveles está activa (online sigue apagada). Cada carga de página es una run
+nueva (como reconectar online); el Códice sí conserva tus descubrimientos.
+Por URL: `?local=1` (y `?nivel=level-N` para saltar a un nivel). El antiguo modo
+por turnos queda aparcado en `?autostart=1` como referencia.
+
 El juego se renderiza en **3D real en TERCERA PERSONA** (motor Three.js incluido): la cámara
 va pegada a la espalda del errante, los niveles interiores tienen **techo real con
 fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por URL:
@@ -31,7 +42,6 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 | ESC | **Ajustes**: volumen, pantalla completa, opciones, versión del juego y la caja 🔑 de guardián |
 | Q (o clic en su caja) | **Usar la mano izquierda** (linterna, tubería, fuego griego…) |
 | E (o clic en su caja) | **Usar la mano derecha** (los objetos a 2 manos solo responden a Q) |
-| G | **No-clip** (solo con su Instinto): atraviesas la pared que encaras |
 
 *(Mantener pulsada W camina a velocidad constante — sin ráfagas.)*
 
@@ -80,25 +90,7 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 - **Pantalla completa (v25)**: el botón de Ajustes ahora extiende el juego a TODA la
   pantalla, re-renderizando a la resolución del monitor (nada de cuadro con bordes).
 
-## 2b. La Sintonía (el "RPG" de las Backrooms)
-
-No hay experiencia ni niveles de personaje: hay un **pacto silencioso con el lugar**.
-
-- **Sintonía (0-100)**: sube al presenciar horrores — matar entidades, chocar con ellas a
-  oscuras, beber agua contaminada, ver remodelarse los pasillos, cruzar caminos inestables,
-  vivir con la mente rota… Aparece como un **ojo amarillo** entre los iconos de estado.
-  Baja muy poco (descansar en niveles seguros, usar el Recuerdo del hogar).
-- **Instintos**: al cruzar los umbrales 20/40/60/80 eliges **1 de 3 instintos** (aleatorios
-  de un pool de 8): oír entidades a través de los muros, pasos silenciosos, esquiva
-  instintiva, necesitar menos agua/comida, registrar sin pifias, +visión, regeneración…
-  y a Sintonía 80 puede aparecer **No-clip** (tecla `G`: atraviesas la pared que encaras,
-  a cambio de cordura y con riesgo de caer al Vacío).
-- **El precio**: con Sintonía alta las entidades corrientes empiezan a IGNORARTE (te huelen
-  como cosa del lugar)… pero al cruzar una salida de ESCAPE la realidad tira un dado contra
-  tu Sintonía: si ya eres "demasiado de este lado", **te escupe de vuelta**. Escapar de
-  verdad exige seguir siendo humano. Poder o volver a casa: elige.
-
-## 2c. Combate y escape
+## 2b. Combate y escape
 
 - **Telegraph**: toda entidad ANUNCIA su golpe un turno antes (⚠ y parpadeo ámbar).
   Si te mueves ese turno, el golpe falla. El Cazador solo avisa la primera vez.
@@ -163,7 +155,11 @@ genera exactamente los mismos mapas. Ideal para que tu chat juegue tu misma part
    (los dos frames en horizontal). Puedes poner más frames: 144×48 = 3, etc.
 3. Guárdalo en `game/assets/sprites/` con el nombre exacto del personaje:
    `hound.png`, `faceling.png`, `player_down.png`… (lista completa en el `LEEME.txt` de esa carpeta).
-4. Recarga el juego (F5). Si el PNG existe, se usa; si lo borras, vuelve el pixel-art integrado.
+4. Ejecuta `node pipeline/build-assets-manifest.js` (apunta el archivo nuevo en el
+   inventario de assets — desde v30.6 el juego solo carga lo inventariado, sin sondear
+   rutas a ciegas ni llenar la consola de 404).
+5. Recarga el juego (F5). Si el PNG existe, se usa; si lo borras, vuelve el pixel-art
+   integrado (recuerda re-ejecutar el paso 4 también al borrar).
 
 **¿Tienes una imagen que NO cumple el formato?** (otro tamaño, sin frames, con fondo…)
 → Déjala en cualquier carpeta del proyecto y dile a Claude *«convierte esta imagen en el sprite
@@ -186,8 +182,10 @@ no necesitas hacer nada para que suene. Para silenciar: botón del menú de ajus
   interruptor de la **animación del dado**. Todo se recuerda.
 - Al pasar de nivel (tarjeta de presentación) el ambiente se detiene y suena un pad suave.
 - **Sustituir un efecto**: pon un `.mp3`/`.ogg`/`.wav` en `game/assets/sounds/` con el nombre
-  del efecto (`golpe.mp3`, `paso.mp3`…). Lista completa en el `LEEME.txt` de esa carpeta.
+  del efecto (`golpe.mp3`, `paso.mp3`…) y ejecuta `node pipeline/build-assets-manifest.js`.
+  Lista completa en el `LEEME.txt` de esa carpeta.
 - **Ambientes por nivel**: guarda un archivo como `game/assets/sounds/niveles/level-X.mp3`
+  (+ `node pipeline/build-assets-manifest.js`)
   y el juego lo usa automáticamente, **sin ejecutar nada**. Ejemplo: para tener el zumbido
   original de las Backrooms en Level 0, guarda tu audio favorito como `niveles/level-0.mp3`.
   Los de **Level 306, 385 y 777 son los audios reales de sus páginas de la wiki** (ya incluidos).
@@ -348,6 +346,9 @@ El servidor arranca solo al encender y se reinicia si se cae.
 - `/kick nombre` · `/mute nombre 10` (minutos) · `/ban nombre` (permanente).
 - `/tp 14` (o `/tp level-483`) — teletransporte de guardián a cualquier nivel:
   tu menú de debug para enseñar niveles en directo.
+- `/reiniciar` — reinicia el servidor desde dentro del juego: anuncia a todos,
+  el proceso se apaga limpio y vuelve solo en ~3 segundos (los jugadores
+  reconectan al Level 0; sus fichas y baneos se conservan).
 
 **D. Mantenimiento:**
 - Actualizar a la última versión: `bash /opt/backrooms-mmo/deploy/desplegar.sh`
@@ -355,6 +356,34 @@ El servidor arranca solo al encender y se reinicia si se cae.
 - Ver los registros: `journalctl -u backrooms-mmo -f`
 - Probado con **500 jugadores simultáneos** en un equipo modesto (130-190 MB de RAM):
   un VPS básico va sobrado.
+
+## 12b. Sala de Control y modo espectador (v30) — para tus directos
+
+La sala de monitoreo del streamer: `https://tudominio.com/observatorio/mapa`
+(o el botón **🗺 SALA DE CONTROL** dentro de `/observatorio`). Pide la misma
+clave de guardián.
+
+**Qué hace:**
+- **Mapa vivo** del grafo de niveles (como el mapa del piloto, pero en tiempo
+  real): cada nivel muestra un badge ámbar con cuántos jugadores hay dentro y
+  sus nombres. Pasar el ratón ilumina las conexiones.
+- **Clic en un nivel** → panel con sus jugadores (salud/sed/cordura, tiempo
+  dentro, flags) y botones **👁 Espectar** / kick / ban.
+- **Ticker de eventos** (franja inferior): quién entra, quién cruza de nivel,
+  quién muere y ⭐ quién ESCAPA — perfecto para el reto de «el primero que
+  encuentre la salida gana».
+- **📢 Anunciar**: escribe el reto (o el ganador) y lo ven TODOS los jugadores.
+
+**Modo espectador (👁):** para que funcione tienes que estar DENTRO del juego
+con la clave 🔑 validada en Ajustes. Al pulsar 👁 sobre un jugador:
+- Tu personaje se teletransporta junto a él, **invisible**: ni los jugadores
+  ni las entidades te ven, y no puedes tocar nada (eres un fantasma).
+- La cámara pasa a **cenital** (vista desde arriba, sin techo); la **rueda del
+  ratón** sube/baja la altura.
+- La cámara **sigue sola a tu objetivo**, incluso cuando cruza de nivel o
+  muere y reaparece en Level 0.
+- **←/→** cambian de objetivo entre los jugadores de la sala; **ESC** (o el
+  botón «✕ salir» de la barra) te devuelve al mundo, visible otra vez.
 
 ## 13. Si algo falla
 

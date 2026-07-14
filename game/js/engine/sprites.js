@@ -873,7 +873,7 @@
     return img;
   }
 
-  function rutasOverride(id) {
+function rutasOverride(id) {
     // "apariencia" sumada acá (v28.15): el usuario coloca ahí TODO el arte de
     // personaje por costumbre (Hair1.png, Superior1_down.png...), así que un
     // override de cuerpo completo como hazmat_down.png también se busca ahí
@@ -888,16 +888,10 @@
   // intenta cargar imagenes externas (hoja horizontal de frames de 48x48).
   // Si no existe archivo, queda activo el sprite procedural generado.
   function tryOverrides(ids) {
+    const M = (window.ASSETS_MANIFEST || {}).sprites || {};
     for (const id of ids) {
-      if (overrides[id]) continue;
-      const urls = rutasOverride(id);
-      let i = 0, img = null;
-      const siguiente = () => {
-        if (overrides[id] || i >= urls.length) return;
-        img = cargarOverride(id, urls[i++]);
-        img.onerror = siguiente;
-      };
-      siguiente();
+      if (overrides[id] || !M[id]) continue;
+      cargarOverride(id, M[id]);
     }
   }
 
@@ -1445,8 +1439,7 @@
     list: () => Object.keys(DEFS),
     CAPA_MASCARA_GAS,
     version: () => overrideVersion,
-    overridePaths: rutasOverride,
-    // personalización de personaje (v28)
+// personalización de personaje (v28)
     tryCapasApariencia, estilosDisponibles, getTintado, limpiarTintado,
   };
 })();
