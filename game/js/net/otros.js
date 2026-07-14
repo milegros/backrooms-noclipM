@@ -211,19 +211,16 @@
     const p = world?.player;
     for (const o of porId.values()) {
       if (o.escondido) continue; // dentro de una taquilla no hay nombre que leer
-      // La capa social solo dibuja nombres/bocadillos cercanos. Evita proyectar
-      // cada jugador de una sala llena cuando no produciría ningún píxel.
-      const cercano = p && Math.hypot(o.rx - p.rx, o.ry - p.ry) <= RADIO_SOCIAL;
-      if (o.chat && (t - o.chatT) / CHAT_DUR >= 1) o.chat = null;
-      if (!cercano) continue;
       const [sx, sy, detras] = proj(o.rx, o.ry);
       if (detras) continue;
       if (sx < -80 || sy < -80 || sx > ctx.canvas.width + 80 || sy > ctx.canvas.height + 80) continue;
       // capa social de PROXIMIDAD: de lejos ves una figura, no sabes quién es
-      nombre(ctx, sx, sy, o.nombre);
+      const cercano = p && Math.hypot(o.rx - p.rx, o.ry - p.ry) <= RADIO_SOCIAL;
+      if (cercano) nombre(ctx, sx, sy, o.nombre);
       if (o.chat) {
         const k = (t - o.chatT) / CHAT_DUR;
-        burbuja(ctx, sx, sy, o.chat, k);
+        if (k >= 1) o.chat = null;
+        else if (cercano) burbuja(ctx, sx, sy, o.chat, k);
       }
     }
     // tu propio mensaje, sobre tu cabeza

@@ -23,7 +23,6 @@
   // ve por encima → nunca se rompe la sensación de interior)
   const WALL_H = CAM_MODO === 'tercera' ? 2.3 : 1.2;
   const SPRITE_H = 1.05;   // alto del billboard de actores
-  const RADIO_OTROS = 42;  // jugadores remotos más lejanos quedan ocultos por niebla/distancia
   const ROT_VEC = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // norte, este, sur, oeste
 
   let renderer, scene, camera, amb, plight, spot, dlight;
@@ -1617,33 +1616,22 @@
       const camDir = CAM_MODO === 'tercera'
         ? (world.online ? -camYaw : p.rot * Math.PI / 2)
         : ((4 - camRot) % 4) * Math.PI / 2;
-      const radioOtros2 = (world.espectador ? 60 : RADIO_OTROS) ** 2;
       for (const o of world.otros) {
         vivos.add(o.id);
-        const sExistente = otrosSprites.get(o.id);
-        const lejos = (o.rx - p.rx) ** 2 + (o.ry - p.ry) ** 2 > radioOtros2;
-        if (o.escondido || lejos) {
-          if (sExistente) sExistente.visible = false;
-          continue;
+        if (o.escondido) { const sE = otrosSprites.get(o.id); if (sE) sE.visible = false; continue; }
+        let s = otrosSprites.get(o.id);
+        if (!s) {
+          s = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
+          s.scale.set(1, SPRITE_H, 1);
+          actorGroup.add(s);
+          otrosSprites.set(o.id, s);
         }
         const [sid2, flip2] = Otros.spriteDe(o, camDir);
         const f2 = (Math.abs(o.rx - o.x) + Math.abs(o.ry - o.y) > 0.03)
           ? Math.floor(t / 150) % Sprites.frameCount(sid2) : 0;
-        const textura = spriteTexFlip(sid2, f2, flip2);
-        let s = otrosSprites.get(o.id);
-        if (!s) {
-          s = new THREE.Sprite(new THREE.SpriteMaterial({ map: textura, transparent: true }));
-          s.scale.set(1, SPRITE_H, 1);
-          actorGroup.add(s);
-          otrosSprites.set(o.id, s);
-        } else if (s.material.map !== textura) {
-          // Cambiar entre texturas ya presentes no recompila el material. Marcar
-          // needsUpdate cada frame forzaba trabajo caro con salas llenas.
-          const cambiaPresencia = !!s.material.map !== !!textura;
-          s.material.map = textura;
-          if (cambiaPresencia) s.material.needsUpdate = true;
-        }
         s.visible = true;
+        s.material.map = spriteTexFlip(sid2, f2, flip2);
+        s.material.needsUpdate = true;
         s.position.set(o.rx + 0.5, SPRITE_H / 2 + 0.02, o.ry + 0.5);
       }
       for (const [id, s] of otrosSprites)
