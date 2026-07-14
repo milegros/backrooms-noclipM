@@ -1368,6 +1368,11 @@
     p.inputX = 0;
     p.inputY = 0;
 
+    // Interpola a los jugadores remotos ANTES de que el espectador copie la
+    // posición de su objetivo y antes de dibujar sus sprites. Antes ocurría al
+    // final del overlay, de modo que cámara y actores usaban una muestra vieja.
+    if (world.online && window.Otros) Otros.frame(t);
+
     // ---------- v22: vector de movimiento por frame (movimiento libre) ----------
     if (world.online && world.espectador && window.Net && Net.activo) {
       // modo espectador (v30): sin input — Net.frame pega la cámara al objetivo

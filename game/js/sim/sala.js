@@ -51,6 +51,9 @@ const esTransitable = esNode ? M.esTransitable : function (map, x, y) {
 const CAP_SALA = 60;          // jugadores por instancia de nivel
 const COOLDOWN_CHAT = 1500;   // ms entre mensajes de chat
 const RADIO_CHAT = 14;        // casillas: el chat es de PROXIMIDAD (voz, no megafonía)
+// La simulación sigue a 20 Hz. Solo la difusión visual baja a 10 Hz: el
+// cliente interpola esas muestras a sus FPS de render sin perder fluidez.
+const INTERVALO_POS_MS = 100;
 
 // Base de datos INYECTABLE: el servidor real registra expedientes (usarDb en
 // server/sala.js); el modo local del navegador se queda con estos no-op.
@@ -343,7 +346,7 @@ class Sala {
     jug._margen -= d;
     jug.x = m.x; jug.y = m.y;
     if (m.rot !== undefined) jug.rot = m.rot;
-    (this._movidosExtra || (this._movidosExtra = [])).push(jug);
+    (this._movidosExtra || (this._movidosExtra = new Map())).set(jug.id, jug);
     // canal de romper: alejarse del punto de inicio lo interrumpe
     if (jug.canal && Fisica.dist(m.x, m.y, jug.canal.origen[0], jug.canal.origen[1]) > 0.3)
       this.cancelarCanal(jug, 'Te apartas: dejas lo que estabas haciendo.');
@@ -1009,21 +1012,24 @@ class Sala {
     const dt = Math.min(0.25, (ahora - (this._ultTick || ahora)) / 1000);
     this._ultTick = ahora;
     // las posiciones aceptadas en posicion() esperan aquí su difusión
-    const movidos = this._movidosExtra || [];
-    this._movidosExtra = [];
+    const movidos = this._movidosExtra || (this._movidosExtra = new Map());
     for (const jug of this.jugadores.values())
       if (jug.canal && ahora >= jug.canal.hasta) this.resolverCanal(jug);
     Entidades.tick(this, ahora, dt);
-    // difusión BATCHED de posiciones: un solo mensaje por tick con lo que se
-    // movió (dedupe: un jugador puede venir del tramo parcial Y del tick)
-    if (movidos.length || (this._entMovidas && this._entMovidas.length)) {
+    // La simulación continúa a 20 Hz, pero la red publica a 10 Hz. Durante los
+    // 100 ms intermedios los Map conservan solo la posición más reciente de
+    // cada actor: menos tráfico para 60 jugadores sin acumular datos viejos.
+    const entidadesMovidas = this._entMovidas || (this._entMovidas = new Map());
+    if ((movidos.size || entidadesMovidas.size) &&
+        (!this._proximaDifusionPos || ahora >= this._proximaDifusionPos)) {
       this.difundir({
         t: 'pos',
-        j: [...new Map(movidos.map((j) => [j.id, j])).values()]
-          .map((j) => [j.id, r2(j.x), r2(j.y), r2(j.rot ?? 0)]),
-        e: (this._entMovidas || []).map((e) => [e.uid, r2(e.x), r2(e.y)]),
+        j: [...movidos.values()].map((j) => [j.id, r2(j.x), r2(j.y), r2(j.rot ?? 0)]),
+        e: [...entidadesMovidas.values()].map((e) => [e.uid, r2(e.x), r2(e.y)]),
       });
-      this._entMovidas = [];
+      movidos.clear();
+      entidadesMovidas.clear();
+      this._proximaDifusionPos = ahora + INTERVALO_POS_MS;
     }
     // regla no_euclidiana de la ficha: cada 45-90 s el nivel se reorganiza.
     // DESACTIVADA online (v23.6, decisión del usuario): quien entra a una sala
@@ -1234,7 +1240,7 @@ const api = {
   prepararSala, cambiarDeSala, esSinRetorno, moverEspectador,
   usarDb, ganchos, metricas, activarRemodel, fijarSemillaBase,
   generarMapa, esTransitable,
-  SALA_PUBLICA, GRACIA_SALA_VACIA, CAP_SALA, COOLDOWN_CHAT, RADIO_CHAT,
+  SALA_PUBLICA, GRACIA_SALA_VACIA, CAP_SALA, COOLDOWN_CHAT, RADIO_CHAT, INTERVALO_POS_MS,
 };
 if (esNode) module.exports = api;
 else window.Salas = api;

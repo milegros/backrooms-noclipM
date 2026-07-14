@@ -1340,6 +1340,18 @@
     return c ? tex(c, key) : null;
   }
 
+  // `needsUpdate` obliga a Three.js a revalidar el material. Antes se marcaba
+  // en cada frame para el jugador, las entidades y cada jugador remoto, aunque
+  // la textura siguiera siendo la misma. En salas concurridas eso multiplica
+  // el trabajo de GPU sin aportar ningún cambio visual.
+  function setSpriteTexture(sprite, texture) {
+    const material = sprite.material;
+    if (material.map === texture) return;
+    const cambiaUsoMapa = !!material.map !== !!texture;
+    material.map = texture;
+    if (cambiaUsoMapa) material.needsUpdate = true;
+  }
+
   function entVisible(world, e) {
     const g = world.map.grid;
     // v22: posiciones flotantes — el índice de luz va por tile redondeado
@@ -1538,8 +1550,7 @@
     // malherido: el propio sprite lo cuenta (sangre y palidez)
     if (p.salud < 35 && Sprites.tiene(sid + '_herido')) sid += '_herido';
     const pframe = world.moving ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0;
-    playerSprite.material.map = spriteTexFlip(sid, pframe, sflip);
-    playerSprite.material.needsUpdate = true;
+    setSpriteTexture(playerSprite, spriteTexFlip(sid, pframe, sflip));
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
     // dentro de un mueble no se te ve; el espectador (v30) es un fantasma
     playerSprite.visible = !world.escondido && !world.espectador;
@@ -1549,8 +1560,7 @@
     playerMaskSprite.visible = conMascara && !world.escondido && !world.espectador;
     if (conMascara) {
       const mframe = pframe % Sprites.frameCount(maskId);
-      playerMaskSprite.material.map = spriteTexFlip(maskId, mframe, sflip);
-      playerMaskSprite.material.needsUpdate = true;
+      setSpriteTexture(playerMaskSprite, spriteTexFlip(maskId, mframe, sflip));
       playerMaskSprite.position.copy(playerSprite.position);
     }
 
@@ -1582,8 +1592,7 @@
       if (!visible) continue;
       const frame2 = Math.floor(t / 280) % Sprites.frameCount(e.def.glyph);
       const tx = spriteTex(e.def.glyph, frame2) || entCanvas(e, frame2);
-      s.material.map = tx;
-      s.material.needsUpdate = true;
+      setSpriteTexture(s, tx);
       // embestida de ataque
       let ox = 0, oz = 0;
       if (e._atkT !== undefined) {
@@ -1618,7 +1627,11 @@
         : ((4 - camRot) % 4) * Math.PI / 2;
       for (const o of world.otros) {
         vivos.add(o.id);
-        if (o.escondido) { const sE = otrosSprites.get(o.id); if (sE) sE.visible = false; continue; }
+        if (o.escondido || o._crowdVisible === false) {
+          const sE = otrosSprites.get(o.id);
+          if (sE) sE.visible = false;
+          continue;
+        }
         let s = otrosSprites.get(o.id);
         if (!s) {
           s = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
@@ -1630,8 +1643,7 @@
         const f2 = (Math.abs(o.rx - o.x) + Math.abs(o.ry - o.y) > 0.03)
           ? Math.floor(t / 150) % Sprites.frameCount(sid2) : 0;
         s.visible = true;
-        s.material.map = spriteTexFlip(sid2, f2, flip2);
-        s.material.needsUpdate = true;
+        setSpriteTexture(s, spriteTexFlip(sid2, f2, flip2));
         s.position.set(o.rx + 0.5, SPRITE_H / 2 + 0.02, o.ry + 0.5);
       }
       for (const [id, s] of otrosSprites)
