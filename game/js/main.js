@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-window.VERSION_JUEGO = 'v30.8';
+window.VERSION_JUEGO = 'v30.9';
 
   const world = Game.world;
   world.data = window.GAME_DATA;
@@ -1474,6 +1474,7 @@ window.VERSION_JUEGO = 'v30.8';
   // depuración visual: ?abrir=apariencia abre el panel de personalización desde el título
   if (params.get('abrir') === 'apariencia') {
     if (!Game.Profiles.activeName()) Game.Profiles.create('Errante');
+    cargarOverridesDeJuego();
     setTimeout(() => world.ui.showApariencia(), 300);
   }
   // ---------- BACKROOMS MMO: ?online=1 conecta al mundo compartido ----------
@@ -1949,7 +1950,13 @@ window.VERSION_JUEGO = 'v30.8';
     if (window.Changelog) Changelog.marcarVisto();
     world.ui.toggleChangelog(true);
   };
-  $id('btn-apariencia').onclick = () => world.ui.showApariencia();
+  // el panel de Personalizar se abre ANTES de "DESPERTAR" (sin partida
+  // todavía) — sin esto, los overrides reales (Hair*.png, hazmat_down.png,
+  // Superior*/Inferior*) nunca se pedían (cargarOverridesDeJuego solo
+  // corría al entrar en partida) y el panel se quedaba mostrando el
+  // placeholder procedural para siempre, con "Parte inferior" directamente
+  // vacía (sin estilos que listar)
+  $id('btn-apariencia').onclick = () => { cargarOverridesDeJuego(); world.ui.showApariencia(); };
 
   // ---------- Selector de Música de Menú ----------
   const btnMusicMenu = $id('btn-music-menu');

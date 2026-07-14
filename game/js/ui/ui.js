@@ -930,6 +930,17 @@
     // mostrando el placeholder procedural para siempre. Este watcher
     // repinta apenas Sprites.version() suba (mismo contador que usa
     // render3d.js para lo mismo en la escena 3D).
+    // Reporte real: el panel se abre y arranca a probar estilos (Hair*,
+    // Superior*, Inferior*...) ANTES de que termine el sondeo — como nada
+    // volvía a construir las FILAS de estilo, quedaban todas congeladas en
+    // "Sin pelo"/"Sin vello facial"/"Sin ropa" (o directamente vacías, sin
+    // flechas, en "Parte inferior", que no tiene opción "Sin ropa") la
+    // PRIMERA vez que se abría el panel en la sesión — recién en una
+    // segunda apertura (con el sondeo ya terminado en segundo plano) se
+    // veían las opciones reales. Ahora el watcher también reconstruye las
+    // filas de estilo (NO las de color RGB: refrescarColorRGB reconstruye
+    // los <input type=range> y el usuario podría estar arrastrando uno
+    // justo en ese instante — por eso ese refresco queda fuera).
     // OJO: el único lugar que lo limpia es btn-apariencia-close de abajo —
     // si algún día se suma otra forma de cerrar el panel (ESC, clic afuera),
     // hay que llamar clearInterval(watcher) ahí también o queda un
@@ -937,7 +948,11 @@
     let versionVista = Sprites.version();
     const watcher = setInterval(() => {
       const v = Sprites.version();
-      if (v !== versionVista) { versionVista = v; pintarApariencia(sel); }
+      if (v !== versionVista) {
+        versionVista = v;
+        for (const cat of CATS_ESTILO) refrescarEstiloFila(cat, sel);
+        pintarApariencia(sel);
+      }
     }, 200);
 
     $('btn-ap-random').onclick = () => aleatorizarApariencia(sel);

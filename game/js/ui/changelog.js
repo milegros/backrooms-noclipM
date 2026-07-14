@@ -4,7 +4,11 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
-{ v: 'v30.8', cambios: [
+    { v: 'v30.9', cambios: [
+      'Arreglado: el traje Hazmat y las capas de personalización (pelo, ojos, ropa) no se veían al jugar ni en el panel de "Personalizar" — el traje real que subiste nunca se pedía al servidor y las opciones del panel se congelaban vacías la primera vez que lo abrías en cada sesión.',
+      'Arreglado: el personaje herido podía quedar con el aspecto sin cargar del todo (pelo/ropa/traje) en el render 3D si la herida ocurría justo al entrar a un nivel.',
+    ] },
+    { v: 'v30.8', cambios: [
       'Las salas llenas van mucho más finas: las posiciones de los demás viajan a la mitad de ritmo (tu interpolación las suaviza igual), los errantes muy lejanos ni se dibujan, y cada instancia reparte antes a la gente (aforo 60 → 50). La simulación del servidor sigue exacta. (josealmon)',
     ] },
     { v: 'v30.7', cambios: [
@@ -60,7 +64,6 @@
       'Nueva salida de emergencia en Level 0 hacia Level 14: puerta roja con rótulo EXIT y luz de emergencia, distinta a cualquier otra puerta del juego. (AgenteMaxo)',
       'Nueva Sala Manila en Level 0: una sala tranquila con luz anaranjada tenue. Quedarse dentro varios minutos te lleva, sin avisar, a Level 1 o Level 2. (AgenteMaxo)',
       'Retirado el sistema de Sintonía/Instintos (el ojo amarillo y las cartas de habilidad al cruzar ciertos umbrales) en modo solo. (AgenteMaxo)',
-    ] },
     ] },
     { v: 'v28.7', cambios: [
       'El cabello ahora se dibuja por delante de toda la ropa, no por detrás.',

@@ -1327,15 +1327,25 @@
     }
   }
 
+  // sufijo de versión en TODAS las claves de textura de sprite: los overrides
+  // PNG (cuerpo, capas de apariencia, glyphs de entidad) cargan async
+  // (Image.onload) y el jugador/las entidades se piden desde el primer frame
+  // tras entrar al nivel — si esa primera textura se genera ANTES de que
+  // termine de cargar el override real, quedaba cacheada con el placeholder
+  // procedural PARA SIEMPRE (texCache no se limpia hasta el próximo cambio
+  // de nivel), aunque Sprites.get/getTintado ya devolvieran el sprite
+  // correcto después. Mismo patrón que ya usaba rebuildItems con 'item-'+sv.
+  function svTex() { return window.Sprites?.version ? Sprites.version() : 0; }
+
   function spriteTex(glyph, frame) {
-    const key = 'ent-' + glyph + '-' + frame;
+    const key = 'ent-' + glyph + '-' + frame + '-v' + svTex();
     if (texCache.has(key)) return texCache.get(key);
     const c = Sprites.get(glyph, frame);
     return c ? tex(c, key) : null;
   }
 
   function spriteTexFlip(glyph, frame, flip) {
-    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '');
+    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '') + '-v' + svTex();
     if (texCache.has(key)) return texCache.get(key);
     const c = Sprites.get(glyph, frame, flip);
     return c ? tex(c, key) : null;
@@ -1355,7 +1365,7 @@
   }
   function spriteTexTintado(glyph, apariencia, frame, flip) {
     if (!apariencia) return spriteTexFlip(glyph, frame, flip);
-    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '') + '-ap' + apKey(apariencia);
+    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '') + '-ap' + apKey(apariencia) + '-v' + svTex();
     if (texCache.has(key)) return texCache.get(key);
     const c = Sprites.getTintado(glyph, apariencia, frame, flip);
     return c ? tex(c, key) : null;
