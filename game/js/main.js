@@ -33,8 +33,14 @@
   Render.init(canvas);
 
   // ---------- selección de renderizador: 3D (Three.js) por defecto, ?render=2d de respaldo ----------
+  // El modo offline por turnos (?autostart=1 sin ?online/?local — ver CLAUDE.md)
+  // arranca en 2D por defecto: es el respaldo secundario de un jugador, y el
+  // Canvas 2D clásico es más liviano y no depende de WebGL. ?render=3d/2d
+  // explícito siempre gana sobre este valor por defecto.
   const paramsPre = new URLSearchParams(location.search);
-  let use3D = paramsPre.get('render') !== '2d' && window.Render3D;
+  const offlineTurnosPre = !!paramsPre.get('autostart') && !paramsPre.get('online') && !paramsPre.get('local');
+  const renderParamPre = paramsPre.get('render');
+  let use3D = (renderParamPre ? renderParamPre !== '2d' : !offlineTurnosPre) && window.Render3D;
   const glCanvas = document.getElementById('gl-canvas');
   if (use3D) {
     try {

@@ -1378,7 +1378,6 @@
     material.map = texture;
     if (cambiaUsoMapa) material.needsUpdate = true;
   }
-  }
 
   function entVisible(world, e) {
     const g = world.map.grid;
