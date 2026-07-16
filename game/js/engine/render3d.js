@@ -23,7 +23,6 @@
   // ve por encima → nunca se rompe la sensación de interior)
   const WALL_H = CAM_MODO === 'tercera' ? 2.3 : 1.2;
   const SPRITE_H = 1.05;   // alto del billboard de actores
-  const RADIO_OTROS = 42;  // jugadores remotos más lejanos quedan ocultos por niebla/distancia
   const ROT_VEC = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // norte, este, sur, oeste
 
   let renderer, scene, camera, amb, plight, spot, dlight;
@@ -1351,14 +1350,11 @@
     return c ? tex(c, key) : null;
   }
 
-  // variante con capas de personalización (pelo/ojos/ropa) compuestas y
+// variante con capas de personalización (pelo/ojos/ropa) compuestas y
   // teñidas — la clave de textura suma la apariencia para no compartir caché
   // entre jugadores con distinto estilo/color (v28)
   function apKey(apariencia) {
     if (!apariencia) return '';
-    // v28.14: el modo (hazmat/personalizado) cambia el sprite entero aunque
-    // las 6 categorías de abajo queden iguales (se conservan aunque no se
-    // usen) — sin esto, cambiar de modo reusaba la textura vieja de la caché
     return apariencia.modo + '-' + ['cabello', 'ojos', 'vello', 'superior', 'inferior', 'piel']
       .map((c) => (apariencia[c] ? apariencia[c].estilo + apariencia[c].color : ''))
       .join('-');
@@ -1369,6 +1365,19 @@
     if (texCache.has(key)) return texCache.get(key);
     const c = Sprites.getTintado(glyph, apariencia, frame, flip);
     return c ? tex(c, key) : null;
+  }
+
+  // `needsUpdate` obliga a Three.js a revalidar el material. Antes se marcaba
+  // en cada frame para el jugador, las entidades y cada jugador remoto, aunque
+  // la textura siguiera siendo la misma. En salas concurridas eso multiplica
+  // el trabajo de GPU sin aportar ningún cambio visual.
+  function setSpriteTexture(sprite, texture) {
+    const material = sprite.material;
+    if (material.map === texture) return;
+    const cambiaUsoMapa = !!material.map !== !!texture;
+    material.map = texture;
+    if (cambiaUsoMapa) material.needsUpdate = true;
+  }
   }
 
   function entVisible(world, e) {
@@ -1569,8 +1578,7 @@
     // malherido: el propio sprite lo cuenta (sangre y palidez)
     if (p.salud < 35 && Sprites.tiene(sid + '_herido')) sid += '_herido';
     const pframe = world.moving ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0;
-    playerSprite.material.map = spriteTexTintado(sid, p.apariencia, pframe, sflip);
-    playerSprite.material.needsUpdate = true;
+    setSpriteTexture(playerSprite, spriteTexTintado(sid, p.apariencia, pframe, sflip));
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
     // dentro de un mueble no se te ve; el espectador (v30) es un fantasma
     playerSprite.visible = !world.escondido && !world.espectador;
@@ -1580,8 +1588,7 @@
     playerMaskSprite.visible = conMascara && !world.escondido && !world.espectador;
     if (conMascara) {
       const mframe = pframe % Sprites.frameCount(maskId);
-      playerMaskSprite.material.map = spriteTexFlip(maskId, mframe, sflip);
-      playerMaskSprite.material.needsUpdate = true;
+      setSpriteTexture(playerMaskSprite, spriteTexFlip(maskId, mframe, sflip));
       playerMaskSprite.position.copy(playerSprite.position);
     }
 
@@ -1613,8 +1620,7 @@
       if (!visible) continue;
       const frame2 = Math.floor(t / 280) % Sprites.frameCount(e.def.glyph);
       const tx = spriteTex(e.def.glyph, frame2) || entCanvas(e, frame2);
-      s.material.map = tx;
-      s.material.needsUpdate = true;
+      setSpriteTexture(s, tx);
       // embestida de ataque
       let ox = 0, oz = 0;
       if (e._atkT !== undefined) {
@@ -1647,35 +1653,25 @@
       const camDir = CAM_MODO === 'tercera'
         ? (world.online ? -camYaw : p.rot * Math.PI / 2)
         : ((4 - camRot) % 4) * Math.PI / 2;
-      const radioOtros2 = (world.espectador ? 60 : RADIO_OTROS) ** 2;
       for (const o of world.otros) {
         vivos.add(o.id);
-        const sExistente = otrosSprites.get(o.id);
-        const lejos = (o.rx - p.rx) ** 2 + (o.ry - p.ry) ** 2 > radioOtros2;
-        if (o.escondido || lejos) {
-          if (sExistente) sExistente.visible = false;
+        if (o.escondido || o._crowdVisible === false) {
+          const sE = otrosSprites.get(o.id);
+          if (sE) sE.visible = false;
           continue;
+        }
+        let s = otrosSprites.get(o.id);
+        if (!s) {
+          s = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
+          s.scale.set(1, SPRITE_H, 1);
+          actorGroup.add(s);
+          otrosSprites.set(o.id, s);
         }
         const [sid2, flip2] = Otros.spriteDe(o, camDir);
         const f2 = (Math.abs(o.rx - o.x) + Math.abs(o.ry - o.y) > 0.03)
           ? Math.floor(t / 150) % Sprites.frameCount(sid2) : 0;
-        const textura = spriteTexFlip(sid2, f2, flip2);
-        let s = otrosSprites.get(o.id);
-        if (!s) {
-          s = new THREE.Sprite(new THREE.SpriteMaterial({ map: textura, transparent: true }));
-          s.scale.set(1, SPRITE_H, 1);
-          actorGroup.add(s);
-          otrosSprites.set(o.id, s);
-        } else if (s.material.map !== textura) {
-          // Cambiar entre texturas ya presentes no recompila el material. Marcar
-          // needsUpdate cada frame forzaba trabajo caro con salas llenas.
-          const cambiaPresencia = !!s.material.map !== !!textura;
-          s.material.map = textura;
-          if (cambiaPresencia) s.material.needsUpdate = true;
-        }
         s.visible = true;
-        s.material.map = spriteTexTintado(sid2, o.apariencia, f2, flip2);
-        s.material.needsUpdate = true;
+        setSpriteTexture(s, spriteTexTintado(sid2, o.apariencia, f2, flip2));
         s.position.set(o.rx + 0.5, SPRITE_H / 2 + 0.02, o.ry + 0.5);
       }
       for (const [id, s] of otrosSprites)
@@ -1923,13 +1919,20 @@
           target.y = Math.min(target.y, TP.alto + bob);
         }
       }
-      camera.position.lerp(target, orbitando ? 1 : corrDt(TP.suavidad));
+      // v30.10: online la TRASLACIÓN es rígida SIEMPRE (estilo Roblox) — la
+      // física del jugador ya es continua y no necesita amortiguador. El lerp
+      // de posición solo-al-no-orbitar conmutaba entre 0 y ~0.7 tiles de
+      // retraso cada vez que tocabas/soltabas el ratón andando: latigazo de
+      // ~70 px por frame (medido). El suavizado queda para el yaw (continuo)
+      // y para el modo offline por turnos, cuyos pasos discretos sí lo piden.
+      if (world.online) camera.position.copy(target);
+      else camera.position.lerp(target, corrDt(TP.suavidad));
       // mira hacia delante (según la órbita actual: giro suave sin bandazos)
       frame._look = frame._look || new THREE.Vector3(px, TP.lookY, pz);
-      frame._look.lerp(
-        new THREE.Vector3(px - Math.sin(camYaw) * TP.lookAhead, TP.lookY, pz - Math.cos(camYaw) * TP.lookAhead),
-        orbitando ? 1 : corrDt(0.12)
-      );
+      const lookObjetivo = new THREE.Vector3(
+        px - Math.sin(camYaw) * TP.lookAhead, TP.lookY, pz - Math.cos(camYaw) * TP.lookAhead);
+      if (world.online) frame._look.copy(lookObjetivo);
+      else frame._look.lerp(lookObjetivo, corrDt(0.12));
       camera.lookAt(frame._look);
       // si la cámara queda pegada (muro a la espalda), el personaje se desvanece
       // en vez de tapar media pantalla

@@ -351,7 +351,7 @@
       trebol: ['trebol', 'Suerte', '+2 a todas tus tiradas de dado.'],
       detector: ['antena', 'Detector', 'Entidades cercanas visibles en el mapa (M).'],
       chaqueta: ['chaqueta', 'Abrigo', 'PUESTA: el frío no te daña.'],
-      mascara_gas: ['mascara', 'Aire filtrado', 'PUESTA: desgaste mental ambiental a la mitad.'],
+      mascara_gas: ['mascara', 'Aire filtrado', 'PUESTA: bloquea el aire contaminado · desgaste mental ambiental a la mitad.'],
       botas_reforzadas: ['bota', 'Pisada firme', 'PUESTAS: inmune a charcos sirena · detección −1.'],
     };
     for (const [id, [icono, nombre, tip]] of Object.entries(PASIVOS)) {

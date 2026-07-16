@@ -728,7 +728,7 @@
   "mascara_gas": {
     "id": "mascara_gas",
     "nombre": "Máscara de gas",
-    "descripcion": "Filtra el aire viciado de las Backrooms. PUESTA (ranura de cara), reduce a la mitad el desgaste mental ambiental: zumbidos, esporas, miradas…",
+    "descripcion": "Filtra el aire viciado de las Backrooms. PUESTA (ranura de cara), bloquea el aire contaminado y reduce a la mitad el desgaste mental ambiental: zumbidos, esporas, miradas…",
     "equipo": "cara",
     "efecto": {
       "pasivo": "aire"

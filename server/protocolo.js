@@ -28,7 +28,7 @@ const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
 const COOLDOWN_CHAT = 1500;   // ms entre mensajes de chat
 const RADIO_CHAT = 14;        // casillas: el chat es de PROXIMIDAD (voz, no megafonía)
-const CAP_SALA = 50;          // jugadores por instancia de nivel
+const CAP_SALA = 60;          // jugadores por instancia de nivel
 const CAP_POR_IP = 8;         // conexiones simultáneas por IP
 const MAX_SALA_PRIVADA = 32;  // caracteres máximos del código de sala privada
 

@@ -31,7 +31,15 @@ jobs:
       - name: Tests de perfiles locales
         run: node game/js/systems/game.test.js
 
-      - name: Tests de la Sala compartida (aforo y snapshots)
+      - name: Tests de red — interpolación de remotos y difusión 10 Hz (PR #72)
+        run: |
+          node game/js/net/otros.test.js
+          node server/test-posiciones-carga.js
+
+      - name: Tests de reglas ambientales
+        run: node game/js/systems/rules.test.js
+
+      - name: Tests de la Sala compartida
         run: node game/js/sim/sala.test.js
 
       - name: Auditoría de Level 0 (100 semillas deterministas)

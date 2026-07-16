@@ -325,7 +325,7 @@ function pasoEntidad(sala, e, ahora) {
 function tick(sala, ahora, dt) {
   if (!sala.entidades.length || !sala.jugadores.size) return;
   sala._dmap = dmapJugadores(sala);
-  sala._entMovidas = sala._entMovidas || [];
+  sala._entMovidas = sala._entMovidas || new Map();
   for (const e of sala.entidades) {
     if (!e.viva) continue;
     resolverTelegraph(sala, e, ahora);
@@ -345,7 +345,7 @@ function tick(sala, ahora, dt) {
         if (Fisica.dist(nx, ny, e.x, e.y) < 0.001) e.wp = null; // atascada: que decida otra cosa
         e.x = nx; e.y = ny;
       }
-      sala._entMovidas.push(e);
+      sala._entMovidas.set(e.uid, e);
     }
   }
   if (sala.ruido && ahora > sala.ruido.hasta) sala.ruido = null;

@@ -37,6 +37,25 @@
         if (world.turn % 4 === 0) world.thirst(-1);
       },
     },
+    aire_contaminado: {
+      nombre: 'Aire contaminado',
+      icono: '☁',
+      desc: 'El smog tóxico daña muy lentamente. Una máscara de gas o protección química lo bloquea.',
+      entrar(world) {
+        world.player._aireContaminado = 0;
+      },
+      turno(world) {
+        const protegido = world.equipado('mascara_gas') ||
+          world.tienePasivo?.('traje_hostil') ||
+          world.tienePasivo?.('proteccion_quimica');
+        if (protegido) return;
+        world.player._aireContaminado = (world.player._aireContaminado || 0) + 1;
+        if (world.player._aireContaminado < 48) return;
+        world.player._aireContaminado -= 48;
+        world.hurt(1, 'el aire contaminado', true);
+        world.log('El smog te irrita los pulmones. Necesitas aire filtrado.', 'event');
+      },
+    },
     frio: {
       nombre: 'Frío glacial',
       icono: '❄',

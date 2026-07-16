@@ -5,12 +5,16 @@
 (function () {
   const porId = new Map(); // id -> otro
   let miId = null;
+  let ultimoFrameT = -1;
+  let ultimoPasoRemotoT = -Infinity;
 
   const CHAT_DUR = 4200; // ms de vida de un bocadillo de chat
 
   function reset(id) {
     porId.clear();
     miId = id;
+    ultimoFrameT = -1;
+    ultimoPasoRemotoT = -Infinity;
     const w = window.Game && Game.world;
     if (w) w.otros = [];
   }
@@ -39,6 +43,10 @@
   // guardan con su hora de llegada y se dibuja ~RETARDO ms EN EL PASADO,
   // interpolando entre dos instantáneas reales: velocidad constante.
   const RETARDO_INTERP = 200; // ms (2 ticks: aguanta el jitter de red sin quedarse sin par)
+  const PAUSA_MOVIMIENTO = 500;
+  const REANUDACION_SUAVE = 120;
+  const MAX_AVATARES_POR_CASILLA = 8;
+  const PASO_REMOTO_MIN_MS = 120;
 
   function pushSnap(o, x, y) {
     const buf = o._snaps || (o._snaps = []);
@@ -57,15 +65,20 @@
       if (buf[i].t >= t) { b = buf[i]; a = buf[i - 1]; break; }
       a = buf[i];
     }
-    if (!b || b.t - a.t > 500) {
-      // sin par que rodee t (parado) o hueco enorme (estuvo quieto): al último
-      const fin = b || a;
-      o.rx = fin.x; o.ry = fin.y;
-    } else {
-      const f = (t - a.t) / Math.max(1, b.t - a.t);
-      o.rx = a.x + (b.x - a.x) * f;
-      o.ry = a.y + (b.y - a.y) * f;
-    }
+    if (!b) { o.rx = a.x; o.ry = a.y; return true; }
+
+    // Si el jugador llevaba parado, el servidor no envió muestras durante la
+    // pausa. Saltar directamente a `b` hacía que cada reanudación se viera como
+    // un teleport, especialmente evidente al observar salas de 30-60 personas.
+    // Conservamos la posición quieta y mezclamos solo el tramo final, equivalente
+    // a un intervalo normal de red, antes de continuar con las muestras reales.
+    const inicio = b.t - a.t > PAUSA_MOVIMIENTO
+      ? Math.max(a.t, b.t - REANUDACION_SUAVE)
+      : a.t;
+    if (t <= inicio) { o.rx = a.x; o.ry = a.y; return true; }
+    const f = Math.max(0, Math.min(1, (t - inicio) / Math.max(1, b.t - inicio)));
+    o.rx = a.x + (b.x - a.x) * f;
+    o.ry = a.y + (b.y - a.y) * f;
     return true;
   }
 
@@ -143,9 +156,14 @@
 
   // posición visual por frame: muestreo del búfer (lerp solo de respaldo);
   // el rumbo llega a 20 Hz y aquí se suaviza (sin escalones al girar)
-  function frame() {
-    const ahora = performance.now();
+  function frame(ahora = performance.now()) {
+    // main actualiza antes de renderizar para que sprites y cámara usen la
+    // misma muestra. overlay conserva esta llamada como respaldo, sin repetir
+    // el trabajo cuando recibe el mismo timestamp de requestAnimationFrame.
+    if (ahora === ultimoFrameT) return;
+    ultimoFrameT = ahora;
     const w = window.Game && Game.world;
+    let pasoCercano = false;
     for (const o of porId.values()) {
       const ax = o.rx, ay = o.ry;
       if (!muestrear(o, ahora)) {
@@ -160,11 +178,30 @@
         o._paso = (o._paso || 0) + Math.hypot(o.rx - ax, o.ry - ay);
         if (o._paso > 1.6) {
           o._paso = 0;
-          if (window.Sfx && Math.hypot(o.rx - w.player.rx, o.ry - w.player.ry) < 8)
-            Sfx.play('paso', w.level?.estilo?.suelo);
+          if (Math.hypot(o.rx - w.player.rx, o.ry - w.player.ry) < 8)
+            pasoCercano = true;
         }
       }
     }
+    if (pasoCercano && window.Sfx && ahora - ultimoPasoRemotoT >= PASO_REMOTO_MIN_MS) {
+      ultimoPasoRemotoT = ahora;
+      Sfx.play('paso', w.level?.estilo?.suelo);
+    }
+
+    // Ocho sprites superpuestos ya comunican una multitud; dibujar otros 52
+    // exactamente en la misma casilla solo multiplica el alpha blending. El
+    // objetivo observado siempre se conserva y todos siguen en la simulación.
+    const ocupacion = new Map();
+    const objetivo = w?.espectador ? porId.get(w.espectador.objetivo) : null;
+    const marcar = (o, forzar) => {
+      if (o.escondido) { o._crowdVisible = false; return; }
+      const key = `${Math.floor(o.rx)},${Math.floor(o.ry)}`;
+      const n = ocupacion.get(key) || 0;
+      o._crowdVisible = !!forzar || n < MAX_AVATARES_POR_CASILLA;
+      if (o._crowdVisible) ocupacion.set(key, n + 1);
+    };
+    if (objetivo) marcar(objetivo, true);
+    for (const o of porId.values()) if (o !== objetivo) marcar(o, false);
   }
 
   // ---------- capa 2D sobre ambos renders ----------
@@ -206,25 +243,35 @@
   }
 
   const RADIO_SOCIAL = 13; // casillas: los nombres se leen solo de cerca
+  const MAX_NOMBRES = 12;
+  const MAX_BURBUJAS = 6;
 
   function overlay(ctx, proj, world, t) {
-    frame();
+    frame(t);
     const p = world?.player;
+    const visibles = [];
     for (const o of porId.values()) {
-      if (o.escondido) continue; // dentro de una taquilla no hay nombre que leer
-      // La capa social solo dibuja nombres/bocadillos cercanos. Evita proyectar
-      // cada jugador de una sala llena cuando no produciría ningún píxel.
-      const cercano = p && Math.hypot(o.rx - p.rx, o.ry - p.ry) <= RADIO_SOCIAL;
-      if (o.chat && (t - o.chatT) / CHAT_DUR >= 1) o.chat = null;
-      if (!cercano) continue;
+      if (o.escondido || o._crowdVisible === false) continue;
       const [sx, sy, detras] = proj(o.rx, o.ry);
       if (detras) continue;
       if (sx < -80 || sy < -80 || sx > ctx.canvas.width + 80 || sy > ctx.canvas.height + 80) continue;
-      // capa social de PROXIMIDAD: de lejos ves una figura, no sabes quién es
-      nombre(ctx, sx, sy, o.nombre);
+      const distancia = p ? Math.hypot(o.rx - p.rx, o.ry - p.ry) : Infinity;
+      visibles.push({ o, sx, sy, distancia });
+    }
+    visibles.sort((a, b) => a.distancia - b.distancia);
+    let nombres = 0, burbujas = 0;
+    for (const { o, sx, sy, distancia } of visibles) {
+      // Capa social de proximidad con presupuesto: una pila de 60 nombres en
+      // el mismo píxel no aporta información y sí fuerza mucho trabajo Canvas.
+      const cercano = distancia <= RADIO_SOCIAL;
+      if (cercano && nombres < MAX_NOMBRES) { nombre(ctx, sx, sy, o.nombre); nombres++; }
       if (o.chat) {
         const k = (t - o.chatT) / CHAT_DUR;
-        burbuja(ctx, sx, sy, o.chat, k);
+        if (k >= 1) o.chat = null;
+        else if (cercano && burbujas < MAX_BURBUJAS) {
+          burbuja(ctx, sx, sy, o.chat, k);
+          burbujas++;
+        }
       }
     }
     // tu propio mensaje, sobre tu cabeza
