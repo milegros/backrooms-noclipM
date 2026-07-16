@@ -2008,7 +2008,7 @@
     } else {
       renderer.render(scene, camera);
     }
-    drawOverlay(world, t);
+    drawOverlay(world, t, apagon);
 
     if (window.DEBUG3D_ON) {
       window.DEBUG3D = {
@@ -2030,7 +2030,7 @@
     return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H, v.z > 1];
   }
 
-  function drawOverlay(world, t) {
+  function drawOverlay(world, t, apagon) {
     octx.clearRect(0, 0, W, H);
     if (!window.NOFX) Effects.draw(octx, 0, 0, t, 48, project);
     // capa social del MMO: nombres flotantes y bocadillos de chat
@@ -2063,7 +2063,7 @@
       const sombra = octx.createRadialGradient(
         W / 2, H * 0.56, H * 0.08,
         W / 2, H * 0.56, Math.max(W, H) * 0.72);
-      sombra.addColorStop(0, `rgba(0,2,8,${apagon * (p.luz ? 0.02 : 0.13)})`);
+      sombra.addColorStop(0, `rgba(0,2,8,${apagon * (world.player.luz ? 0.02 : 0.13)})`);
       sombra.addColorStop(1, `rgba(0,1,6,${apagon * 0.42})`);
       octx.fillStyle = sombra;
       octx.fillRect(0, 0, W, H);
