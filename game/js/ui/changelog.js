@@ -4,9 +4,20 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
-{ v: 'v30.13', cambios: [
-      'Arreglado: el traje Hazmat y las capas de personalización (pelo, ojos, ropa) no se veían al jugar ni en el panel de "Personalizar" — el traje real que subiste nunca se pedía al servidor y las opciones del panel se congelaban vacías la primera vez que lo abrías en cada sesión.',
-      'Arreglado: el personaje herido podía quedar con el aspecto sin cargar del todo (pelo/ropa/traje) en el render 3D si la herida ocurría justo al entrar a un nivel.',
+{ v: 'v30.15', cambios: [
+      'Arreglado: el traje Hazmat y la personalización de pelo, ojos y ropa a veces no se veían al jugar, y el panel de "Personalizar" podía abrirse vacío la primera vez — ahora tu aspecto se ve siempre bien (para vos y para el resto de jugadores) y el panel muestra todas las opciones desde el primer vistazo.',
+      'Arreglado: si te herían justo al entrar a un nivel, tu personaje podía quedar a medio vestir (sin el pelo, la ropa o el traje bien puestos) en la vista 3D. Ya no pasa.',
+    ] },
+    { v: 'v30.14', cambios: [
+      'El menú principal estrena dos botones grandes: MULTIJUGADOR (azul) y UN JUGADOR (verde). (idea de Roykyu y Jaime Gaming)',
+      'Al entrar en partida ahora CAES hacia las Backrooms: líneas de velocidad, retumbo y golpe al aterrizar. (idea de Jaime Gaming)',
+      'Splash de presentación al cargar la página — se salta con cualquier tecla o clic. (idea de Jaime Gaming)',
+      'Nuevo botón en el menú de pausa: «Noclipearse a la realidad» te saca de la partida y te devuelve al menú.',
+    ] },
+    { v: 'v30.13', cambios: [
+      'Level 1 ahora sufre apagones globales: los fluorescentes fallan, el zumbido se corta y todas sus instancias quedan a oscuras a la vez durante unos segundos. La linterna sigue siendo útil. (josealmon)',
+      'La sed baja más despacio y usar un objeto con la sed a cero ya no provoca una muerte instantánea: la deshidratación vuelve a causar daño gradual. (josealmon)',
+      'Level 13, Level 14 y Level 45 estrenan ambiente sonoro propio, inspirado en la wiki. (Jake-7776)',
     ] },
     { v: 'v30.12', cambios: [
       'Level 0 ya no es un secarral: hay más botellas de agua de almendras por el suelo, más taquillas que registrar, y un resultado medio del dado (12-13) en sus taquillas ahora encuentra agua. El resto de niveles no cambia. (josealmon)',

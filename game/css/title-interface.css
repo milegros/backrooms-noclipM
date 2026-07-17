@@ -226,15 +226,13 @@
   padding: 6px 10px;
 }
 
-#screen-title.title-interface-enabled #btn-start {
-  display: block;
+#screen-title.title-interface-enabled .btn-mode {
+  display: flex;
   width: 100%;
-  min-height: 46px;
   margin: 2px 0 0;
-  padding: 11px 15px;
   text-align: left;
-  border-left-width: 4px;
-  line-height: 1.35;
+  border-left-width: 5px;
+  line-height: 1.25;
 }
 
 #screen-title.title-interface-enabled #btn-continue {
@@ -351,8 +349,7 @@
     padding: 6px 9px;
   }
 
-  #screen-title.title-interface-enabled #btn-start {
-    min-height: 46px;
+  #screen-title.title-interface-enabled .btn-mode {
     padding: 12px 13px;
   }
 }

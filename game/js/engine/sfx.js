@@ -160,6 +160,16 @@
       setTimeout(() => ctx && tono(2400, 0.12, 0.14, 'sine', 2100), 300); // tintineo
     },
     muerte() { tono(220, 1.4, 0.4, 'sawtooth', 40); ruido(1.2, 500, 0.2, 'lowpass', 60); },
+    caida() {
+      // caída de ~3 s hacia las Backrooms: silbido de aire que sube + retumbo
+      // grave que se hunde, y golpe sordo al final (portada → partida, v30.14)
+      ruido(1.1, 900, 0.14, 'bandpass', 300);
+      setTimeout(() => ctx && !muted && ruido(1.1, 1900, 0.16, 'bandpass', 600), 900);
+      setTimeout(() => ctx && !muted && ruido(1.0, 3100, 0.18, 'bandpass', 900), 1800);
+      tono(120, 2.6, 0.22, 'sine', 30);
+      setTimeout(() => ctx && !muted && tono(55, 0.35, 0.4, 'sine', 24), 2650);
+      setTimeout(() => ctx && !muted && ruido(0.25, 220, 0.3, 'lowpass', 80), 2650);
+    },
     victoria() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => ctx && tono(f, 0.5, 0.2), i * 160)); },
     latido() { tono(55, 0.12, 0.5, 'sine', 40); setTimeout(() => ctx && tono(50, 0.14, 0.4, 'sine', 38), 180); },
     ui() { tono(440, 0.05, 0.06, 'sine'); },
@@ -270,6 +280,43 @@
       if (!ctx || muted) return;
       tono(43 + Math.random() * 8, 0.65, 0.045, 'sine', 34);
       setTimeout(() => ctx && !muted && ruido(0.18, 240, 0.035, 'lowpass', 75), 210 + Math.random() * 180);
+    } catch (e) {}
+  }
+
+  // Level 1: fallo de balastos, corte seco del zumbido y reencendido desigual.
+  // También se hunde el bus ambiental para que el silencio se note de verdad;
+  // los pasos, entidades y la linterna conservan su propio canal.
+  function level1Blackout(fase) {
+    try {
+      if (!ctx || muted) return;
+      const ahora = ctx.currentTime;
+      const destinoAmb = fase === 'oscuro' ? volAmb * 0.07
+        : fase === 'pre' ? volAmb * 0.42 : volAmb;
+      const factor = volAmb > 0 ? destinoAmb / volAmb : 1;
+      ambBus.gain.cancelScheduledValues(ahora);
+      ambBus.gain.setValueAtTime(Math.max(0.001, ambBus.gain.value), ahora);
+      ambBus.gain.exponentialRampToValueAtTime(
+        Math.max(0.001, destinoAmb),
+        ahora + (fase === 'vuelve' ? 1.45 : 0.22));
+      if (ambientAudioEl)
+        ambientAudioEl.volume = Math.min(1, 0.62 * vol * volAmb * factor);
+
+      if (fase === 'pre') {
+        ruido(0.18, 3600, 0.11, 'bandpass', 700);
+        tono(118, 0.42, 0.075, 'square', 82);
+        setTimeout(() => ctx && !muted && ruido(0.08, 2600, 0.09, 'bandpass', 500), 420);
+        setTimeout(() => ctx && !muted && ruido(0.06, 3300, 0.075, 'bandpass', 650), 820);
+      } else if (fase === 'oscuro') {
+        ruido(0.075, 2100, 0.16, 'bandpass', 180);
+        tono(92, 0.28, 0.12, 'square', 38);
+        setTimeout(() => ctx && !muted && tono(34, 0.8, 0.06, 'sine', 27), 90);
+      } else if (fase === 'vuelve') {
+        ruido(0.09, 2900, 0.12, 'bandpass', 700);
+        tono(76, 0.18, 0.08, 'square', 108);
+        setTimeout(() => ctx && !muted && ruido(0.055, 3900, 0.08, 'bandpass', 1200), 260);
+        setTimeout(() => ctx && !muted && tono(120, 0.32, 0.045, 'sine'), 620);
+        setTimeout(() => ctx && !muted && ruido(0.05, 3400, 0.055, 'bandpass', 1000), 980);
+      }
     } catch (e) {}
   }
 
@@ -541,6 +588,14 @@
     try {
       stopAmbient();
       if (muted) return;
+      const apagado = levelDef.id === 'level-1' && window.Game?.world?.apagon;
+      const factorApagon = apagado?.fase === 'oscuro' ? 0.07
+        : apagado?.fase === 'pre' ? 0.42
+        : apagado?.fase === 'vuelve' ? 0.7 : 1;
+      if (ctx && ambBus) {
+        ambBus.gain.cancelScheduledValues(ctx.currentTime);
+        ambBus.gain.setTargetAtTime(volAmb * factorApagon, ctx.currentTime, 0.08);
+      }
       const gen = ++ambientGen;
       // 1) archivo del nivel (del usuario o de la wiki) — SOLO rutas que
       // existen según los manifiestos (v30.6: antes se probaban 3 extensiones
@@ -562,7 +617,7 @@
         }
         const el = new window.Audio(candidatos[i++]);
         el.loop = true;
-        el.volume = Math.min(1, 0.62 * vol * volAmb);
+        el.volume = Math.min(1, 0.62 * vol * volAmb * factorApagon);
         // un archivo fallido dispara TANTO el evento 'error' COMO el rechazo de
         // play(): sin este candado la cadena se bifurcaba en dos (acumulación)
         let siguiente = false;
@@ -601,9 +656,23 @@
     } else if (canal === 'amb') {
       volAmb = v;
       try { localStorage.setItem('backrooms-volamb', String(volAmb)); } catch (e) {}
-      if (ambBus) ambBus.gain.value = volAmb;
+      if (ambBus) {
+        const a = window.Game?.world?.level?.id === 'level-1'
+          ? window.Game.world.apagon : null;
+        const factor = a?.fase === 'oscuro' ? 0.07
+          : a?.fase === 'pre' ? 0.42
+          : a?.fase === 'vuelve' ? 0.7 : 1;
+        ambBus.gain.value = volAmb * factor;
+      }
     }
-    if (ambientAudioEl) ambientAudioEl.volume = Math.min(1, 0.62 * vol * volAmb);
+    if (ambientAudioEl) {
+      const a = window.Game?.world?.level?.id === 'level-1'
+        ? window.Game.world.apagon : null;
+      const factor = a?.fase === 'oscuro' ? 0.07
+        : a?.fase === 'pre' ? 0.42
+        : a?.fase === 'vuelve' ? 0.7 : 1;
+      ambientAudioEl.volume = Math.min(1, 0.62 * vol * volAmb * factor);
+    }
     if (menuAudioEl) menuAudioEl.volume = Math.min(1, 0.62 * vol * volAmb);
   }
 
@@ -693,7 +762,7 @@
 
   window.Sfx = {
     unlock, cargarOverrides, play, cue, cueDist, entityLoop, updateEntityLoops, ambient, stopAmbient, toggleMute, setVolume, idle,
-    level0Flicker, playMenu, stopMenu,
+    level0Flicker, level1Blackout, playMenu, stopMenu,
     get muted() { return muted; },
     get volumen() { return vol; },
     get volumenFx() { return volFx; },
